@@ -1,6 +1,7 @@
 package com.example.financeapp.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,10 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -57,26 +65,17 @@ fun TransactionCard(
         Icons.Default.ArrowDownward
     }
 
+    // Menu de contexto ao clicar no card
+    var mostrarMenu by remember { mutableStateOf(false) }
+
     val dissmissState = rememberSwipeToDismissBoxState()
 
     LaunchedEffect(dissmissState.progress) {
-
         val process = dissmissState.progress
-
         if (process > 0.9f) {
-            when(dissmissState.targetValue){
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    //Edit
-                    onEdit(transaction)
-
-                }
-
-                SwipeToDismissBoxValue.EndToStart -> {
-                    //Delete
-                    onDelete(transaction)
-
-                }
-
+            when (dissmissState.targetValue) {
+                SwipeToDismissBoxValue.StartToEnd -> onEdit(transaction)
+                SwipeToDismissBoxValue.EndToStart -> onDelete(transaction)
                 else -> {}
             }
             dissmissState.snapTo(SwipeToDismissBoxValue.Settled)
@@ -87,16 +86,15 @@ fun TransactionCard(
         state = dissmissState,
         backgroundContent = {
             val target = dissmissState.targetValue
-
             val process = dissmissState.progress
 
-            val color = when (target) {
+            val bgColor = when (target) {
                 SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1976D2).copy(alpha = process)
                 SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F).copy(alpha = process)
                 else -> Color.Transparent
             }
 
-            val icon = when (target) {
+            val emoji = when (target) {
                 SwipeToDismissBoxValue.StartToEnd -> "✏️"
                 SwipeToDismissBoxValue.EndToStart -> "🗑️"
                 else -> ""
@@ -107,7 +105,7 @@ fun TransactionCard(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color)
+                    .background(bgColor)
                     .padding(16.dp),
                 horizontalArrangement = when (target) {
                     SwipeToDismissBoxValue.StartToEnd -> Arrangement.Start
@@ -116,31 +114,30 @@ fun TransactionCard(
                 },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(icon, fontSize = 20.sp, modifier = Modifier.scale(scale))
+                Text(emoji, fontSize = 20.sp, modifier = Modifier.scale(scale))
             }
         }
     ) {
         Card(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(vertical = 4.dp)
+                .clickable { mostrarMenu = true },
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),
-        )
-        {
+        ) {
             Column(
                 modifier = Modifier
                     .height(80.dp)
                     .padding(8.dp)
-            )
-            {
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row() {
+                    Row {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
@@ -167,8 +164,38 @@ fun TransactionCard(
                     fontStyle = FontStyle.Italic
                 )
             }
+
+            // Menu dropdown ao clicar no card
+            DropdownMenu(
+                expanded = mostrarMenu,
+                onDismissRequest = { mostrarMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Editar") },
+                    onClick = {
+                        mostrarMenu = false
+                        onEdit(transaction)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar")
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Excluir") },
+                    onClick = {
+                        mostrarMenu = false
+                        onDelete(transaction)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Excluir",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                )
+            }
         }
     }
-
 
 }
