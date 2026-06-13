@@ -15,7 +15,7 @@ fun TransactionList(
 ) {
 
     LazyColumn {
-        items(state.transactions, key = { it.id }) { transaction ->
+        items(state.transacoes, key = { it.id }) { transaction ->
             TransactionCard(
                 transaction,
                 onEdit = { onEdit(transaction) },
