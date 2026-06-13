@@ -1,42 +1,98 @@
 package com.example.financeapp.di
 
+import androidx.room.Room
+import com.example.financeapp.data.config.DataSourceConfigRepositoryImpl
 import com.example.financeapp.data.firebase.datasource.FirestoreDataSource
+import com.example.financeapp.data.provider.RepositoryProvider
+import com.example.financeapp.data.remote.api.AuthInterceptor
+import com.example.financeapp.data.remote.api.TransactionApi
+import com.example.financeapp.data.remote.repository.TransactionRepositoryRemoteImpl
 import com.example.financeapp.data.repository.TransactionRepositoryFirebaseImpl
+import com.example.financeapp.data.room.database.AppDatabase
+import com.example.financeapp.data.room.repository.TransactionRepositoryRoomImpl
+import com.example.financeapp.domain.repository.DataSourceConfigRepository
 import com.example.financeapp.domain.repository.TransactionRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
 import com.example.financeapp.domain.usecase.GetTransactionsUseCase
 import com.example.financeapp.domain.usecase.InsertTransactionsUseCase
 import com.example.financeapp.domain.usecase.UpdateTransactionUseCase
+import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesViewModel
 import com.example.financeapp.ui.screens.home.HomeViewModel
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 val appModule = module {
 
-    //Repository
-    single {
-        FirestoreDataSource()
+    // === Configuração ===
+    single<DataSourceConfigRepository> {
+        DataSourceConfigRepositoryImpl(androidContext())
     }
-    single<TransactionRepository> {
+
+    // === Firebase ===
+    single { FirestoreDataSource() }
+    single<TransactionRepository>(named("firebase")) {
         TransactionRepositoryFirebaseImpl(get())
     }
 
-    //UseCase
-    factory {
-        GetTransactionsUseCase(get())
+    // === Room ===
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            AppDatabase::class.java,
+            "finance_database"
+        ).build()
+    }
+    single { get<AppDatabase>().transactionDao() }
+    single<TransactionRepository>(named("room")) {
+        TransactionRepositoryRoomImpl(get())
     }
 
-    factory { InsertTransactionsUseCase(get()) }
-    factory { UpdateTransactionUseCase(get()) }
-    factory { DeleteTransactionUseCase(get()) }
+    // === Retrofit ===
+    single { AuthInterceptor() }
+    single {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        OkHttpClient.Builder()
+            .addInterceptor(get<AuthInterceptor>())
+            .addInterceptor(logging)
+            .build()
+    }
+    single {
+        Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8000/api/v1/")
+            .client(get())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    single { get<Retrofit>().create(TransactionApi::class.java) }
+    single<TransactionRepository>(named("remote")) {
+        TransactionRepositoryRemoteImpl(get())
+    }
 
-    //VIewModel
-    viewModel {
-        HomeViewModel(
-            get(),
-            get(),
-            get(),
-            get()
+    // === Provider ===
+    single {
+        RepositoryProvider(
+            configRepositorio = get(),
+            repositorioRoom = get(named("room")),
+            repositorioRemote = get(named("remote")),
+            repositorioFirebase = get(named("firebase"))
         )
     }
+
+    // === UseCases ===
+    factory { GetTransactionsUseCase(get<RepositoryProvider>().obterRepositorioAtivo()) }
+    factory { InsertTransactionsUseCase(get<RepositoryProvider>().obterRepositorioAtivo()) }
+    factory { UpdateTransactionUseCase(get<RepositoryProvider>().obterRepositorioAtivo()) }
+    factory { DeleteTransactionUseCase(get<RepositoryProvider>().obterRepositorioAtivo()) }
+
+    // === ViewModels ===
+    viewModel { HomeViewModel(get()) }
+    viewModel { ConfiguracoesViewModel(get()) }
 }
