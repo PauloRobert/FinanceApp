@@ -5,16 +5,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,61 +34,70 @@ import com.example.financeapp.domain.model.TransactionType
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
-
-    val state = viewModel.state
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
-
+fun HomeScreen(
+    aoAbrirConfiguracoes: () -> Unit = {},
+    viewModel: HomeViewModel = koinViewModel()
+) {
+    val estado by viewModel.estado.collectAsState()
+    var mostrarBottomSheet by remember { mutableStateOf(false) }
+    var transacaoSelecionada by remember { mutableStateOf<Transaction?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val scope = rememberCoroutineScope()
-    var showDeletDialog by remember { mutableStateOf(false) }
-
+    val escopo = rememberCoroutineScope()
+    var mostrarDialogoExclusao by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Finance App") },
+                actions = {
+                    IconButton(onClick = aoAbrirConfiguracoes) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configurações")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
-        FloatingActionButton(onClick = { showBottomSheet = true }) {
-            Text("+")
+            FloatingActionButton(onClick = { mostrarBottomSheet = true }) {
+                Text("+")
+            }
         }
-    }) { padding ->
-        if (showDeletDialog && selectedTransaction != null) {
+    ) { padding ->
+        if (mostrarDialogoExclusao && transacaoSelecionada != null) {
             AlertDialog(
-                onDismissRequest = { showDeletDialog = false },
+                onDismissRequest = { mostrarDialogoExclusao = false },
                 confirmButton = {
                     Button(onClick = {
-                        val deleted = selectedTransaction!!
+                        val excluida = transacaoSelecionada!!
+                        viewModel.deletarTransacao(excluida)
+                        mostrarDialogoExclusao = false
 
-                        viewModel.deleteTransaction(deleted)
-                        showDeletDialog = false
-
-                        scope.launch {
-                            val result = snackbarHostState.showSnackbar(
+                        escopo.launch {
+                            val resultado = snackbarHostState.showSnackbar(
                                 message = "Transação excluída",
                                 actionLabel = "Desfazer",
                                 duration = SnackbarDuration.Short
                             )
-                            if (result == SnackbarResult.ActionPerformed) {
-                                viewModel.addTransaction(
-                                    deleted.description,
-                                    deleted.amount,
-                                    deleted.date,
-                                    deleted.type == TransactionType.INCOME
+                            if (resultado == SnackbarResult.ActionPerformed) {
+                                viewModel.adicionarTransacao(
+                                    excluida.description,
+                                    excluida.amount,
+                                    excluida.date,
+                                    excluida.type == TransactionType.INCOME
                                 )
                             }
                         }
                     }) { Text("Excluir") }
                 },
                 dismissButton = {
-                    Button(onClick = {
-                        showDeletDialog = false
-                    }) { Text("Cancelar") }
+                    Button(onClick = { mostrarDialogoExclusao = false }) {
+                        Text("Cancelar")
+                    }
                 },
-                title = {Text("Excluir transação")},
-                text = {Text("Tem certeza que quer excluir a transação?")}
-
+                title = { Text("Excluir transação") },
+                text = { Text("Tem certeza que quer excluir a transação?") }
             )
         }
 
@@ -90,50 +106,46 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-        )
-        {
-            SummarySection(state)
+        ) {
+            SummarySection(estado)
             Spacer(modifier = Modifier.height(16.dp))
             TransactionList(
-                state,
-                onEdit = { transaction ->
-                    selectedTransaction = transaction
-                    showBottomSheet = true
+                estado,
+                onEdit = { transacao ->
+                    transacaoSelecionada = transacao
+                    mostrarBottomSheet = true
                 },
-                onDelete = { transaction ->
-                    selectedTransaction = transaction
-                    showDeletDialog = true
+                onDelete = { transacao ->
+                    transacaoSelecionada = transacao
+                    mostrarDialogoExclusao = true
                 }
             )
         }
 
-        if (showBottomSheet) {
+        if (mostrarBottomSheet) {
             TransactionBottomSheet(
-                transaction = selectedTransaction,
+                transaction = transacaoSelecionada,
                 onDismiss = {
-                    showBottomSheet = false
-                    selectedTransaction = null
+                    mostrarBottomSheet = false
+                    transacaoSelecionada = null
                 },
-                onSave = { description, value, date, isIncone ->
-                    //lógica para inserir
-                    if (selectedTransaction == null) {
-                        //lógica para salvar
-                        viewModel.addTransaction(description, value, date, isIncone)
+                onSave = { descricao, valor, data, ehEntrada ->
+                    if (transacaoSelecionada == null) {
+                        viewModel.adicionarTransacao(descricao, valor, data, ehEntrada)
                     } else {
-                        //lógica para alterar
-                        selectedTransaction?.let { transaction ->
-                            viewModel.updateTransaction(
-                                transaction.copy(
-                                    description = description,
-                                    amount = value,
-                                    date = date,
-                                    type = if (isIncone) TransactionType.INCOME else TransactionType.EXPENSE
+                        transacaoSelecionada?.let { transacao ->
+                            viewModel.atualizarTransacao(
+                                transacao.copy(
+                                    description = descricao,
+                                    amount = valor,
+                                    date = data,
+                                    type = if (ehEntrada) TransactionType.INCOME else TransactionType.EXPENSE
                                 )
                             )
                         }
                     }
-                    showBottomSheet = false
-                    selectedTransaction = null
+                    mostrarBottomSheet = false
+                    transacaoSelecionada = null
                 }
             )
         }
