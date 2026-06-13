@@ -1,66 +1,74 @@
 package com.example.financeapp.ui.screens.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.financeapp.data.provider.RepositoryProvider
+import com.example.financeapp.domain.model.OrigemDados
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
-import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
-import com.example.financeapp.domain.usecase.GetTransactionsUseCase
-import com.example.financeapp.domain.usecase.InsertTransactionsUseCase
-import com.example.financeapp.domain.usecase.UpdateTransactionUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.descriptors.SerialDescriptor
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.time.temporal.TemporalAmount
 
 class HomeViewModel(
-    private val getTransactionsUseCase: GetTransactionsUseCase,
-    private val insertTransactionsUseCase: InsertTransactionsUseCase,
-    private val updateTransactionUseCase: UpdateTransactionUseCase,
-    private val deleteTransactionUseCase: DeleteTransactionUseCase
+    private val repositoryProvider: RepositoryProvider
 ) : ViewModel() {
-    var state by mutableStateOf(HomeUiState())
-        private set
+
+    private val _estado = MutableStateFlow(HomeUiState())
+    val estado: StateFlow<HomeUiState> = _estado.asStateFlow()
 
     init {
+        observarTransacoes()
+        observarOrigem()
+    }
+
+    // Observa transações reagindo automaticamente à troca de origem
+    private fun observarTransacoes() {
         viewModelScope.launch {
-            getTransactionsUseCase().collect { data ->
-                state = state.copy(transactions = data)
+            repositoryProvider.obterTransacoes().collect { lista ->
+                _estado.value = _estado.value.copy(transacoes = lista)
             }
         }
     }
 
+    // Observa a origem de dados atual
+    private fun observarOrigem() {
+        viewModelScope.launch {
+            repositoryProvider.origemAtual.collect { origem ->
+                _estado.value = _estado.value.copy(origemAtual = origem)
+            }
+        }
+    }
 
-    fun addTransaction(
-        description: String,
-        amount: BigDecimal,
-        date: LocalDateTime,
-        type: Boolean
+    fun adicionarTransacao(
+        descricao: String,
+        valor: BigDecimal,
+        data: LocalDateTime,
+        ehEntrada: Boolean
     ) {
         viewModelScope.launch {
-            val transaction = Transaction(
-                description = description,
-                amount = amount,
-                date = date,
-                type = if (type) TransactionType.INCOME else TransactionType.EXPENSE
+            val transacao = Transaction(
+                description = descricao,
+                amount = valor,
+                date = data,
+                type = if (ehEntrada) TransactionType.INCOME else TransactionType.EXPENSE
             )
-            insertTransactionsUseCase(transaction)
+            repositoryProvider.obterRepositorioAtivo().inserirTransacao(transacao)
         }
     }
 
-    fun updateTransaction(transaction: Transaction) {
+    fun atualizarTransacao(transacao: Transaction) {
         viewModelScope.launch {
-            updateTransactionUseCase(transaction)
+            repositoryProvider.obterRepositorioAtivo().atualizarTransacao(transacao)
         }
     }
 
-    fun deleteTransaction(transaction: Transaction) {
+    fun deletarTransacao(transacao: Transaction) {
         viewModelScope.launch {
-            deleteTransactionUseCase(transaction.id)
+            repositoryProvider.obterRepositorioAtivo().deletarTransacao(transacao.id)
         }
     }
 }
