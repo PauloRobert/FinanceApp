@@ -66,7 +66,7 @@ val appModule = module {
     }
     single {
         Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8000/api/v1/")
+            .baseUrl("https://finance-api-rest-3rp8u.ondigitalocean.app/api/v1/")
             .client(get())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
