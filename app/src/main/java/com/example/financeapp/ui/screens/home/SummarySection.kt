@@ -21,16 +21,16 @@ import com.example.financeapp.utils.formatCurrencyBr
 @Composable
 fun SummarySection(state: HomeUiState) {
     //total de entradas
-    val totalIncome = state.transactions
+    val totalEntradas = state.transacoes
         .filter { it.type == TransactionType.INCOME }
         .sumOf { it.amount }
     //total de saídas
-    val totalExpese = state.transactions
+    val totalSaidas = state.transacoes
         .filter { it.type == TransactionType.EXPENSE }
         .sumOf { it.amount }
 
     //saldo
-    val balance = totalIncome - totalExpese
+    val saldo = totalEntradas - totalSaidas
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -42,15 +42,15 @@ fun SummarySection(state: HomeUiState) {
         {
             Text("Saldo", color = Color.White)
             Text(
-                text = formatCurrencyBr(balance),
+                text = formatCurrencyBr(saldo),
                 color = Color.White,
                 style = MaterialTheme.typography.headlineMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text("Entradas: ${formatCurrencyBr(totalIncome)}", color = Color.Green)
+            Text("Entradas: ${formatCurrencyBr(totalEntradas)}", color = Color.Green)
 
-            Text("Saídas: ${formatCurrencyBr(totalExpese)}", color = Color(0xFFF3A1B3))
+            Text("Saídas: ${formatCurrencyBr(totalSaidas)}", color = Color(0xFFF3A1B3))
 
         }
     }
