@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -58,6 +59,21 @@ dependencies {
     implementation(libs.material.icons)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
+    // Room
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.gson)
+    // DataStore
+    implementation(libs.datastore.preferences)
+    // Navigation
+    implementation(libs.navigation.compose)
+
     coreLibraryDesugaring(libs.android.desugar)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
