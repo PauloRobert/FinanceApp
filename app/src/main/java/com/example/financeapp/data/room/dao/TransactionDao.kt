@@ -14,6 +14,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transacoes ORDER BY data DESC")
     fun obterTodas(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transacoes WHERE id = :id")
+    suspend fun obterPorId(id: String): TransactionEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun inserir(entidade: TransactionEntity)
 

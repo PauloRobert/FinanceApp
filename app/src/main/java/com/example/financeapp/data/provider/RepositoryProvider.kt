@@ -20,7 +20,8 @@ class RepositoryProvider(
     private val configRepositorio: DataSourceConfigRepository,
     private val repositorioRoom: TransactionRepository,
     private val repositorioRemote: TransactionRepository,
-    private val repositorioFirebase: TransactionRepository
+    private val repositorioFirebase: TransactionRepository,
+    private val repositorioOfflineFirst: TransactionRepository
 ) {
 
     private val escopo = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -42,6 +43,7 @@ class RepositoryProvider(
             OrigemDados.ROOM -> repositorioRoom
             OrigemDados.REMOTE -> repositorioRemote
             OrigemDados.FIREBASE -> repositorioFirebase
+            OrigemDados.OFFLINE_FIRST -> repositorioOfflineFirst
         }
     }
 
@@ -53,6 +55,7 @@ class RepositoryProvider(
                 OrigemDados.ROOM -> repositorioRoom.obterTransacoes()
                 OrigemDados.REMOTE -> repositorioRemote.obterTransacoes()
                 OrigemDados.FIREBASE -> repositorioFirebase.obterTransacoes()
+                OrigemDados.OFFLINE_FIRST -> repositorioOfflineFirst.obterTransacoes()
             }
         }
     }
@@ -61,4 +64,3 @@ class RepositoryProvider(
         configRepositorio.salvarOrigem(novaOrigem)
     }
 }
-

@@ -2,6 +2,7 @@ package com.example.financeapp.di
 
 import androidx.room.Room
 import com.example.financeapp.data.config.DataSourceConfigRepositoryImpl
+import com.example.financeapp.data.connectivity.ConnectivityObserver
 import com.example.financeapp.data.firebase.datasource.FirestoreDataSource
 import com.example.financeapp.data.provider.RepositoryProvider
 import com.example.financeapp.data.remote.api.AuthInterceptor
@@ -10,6 +11,8 @@ import com.example.financeapp.data.remote.repository.TransactionRepositoryRemote
 import com.example.financeapp.data.repository.TransactionRepositoryFirebaseImpl
 import com.example.financeapp.data.room.database.AppDatabase
 import com.example.financeapp.data.room.repository.TransactionRepositoryRoomImpl
+import com.example.financeapp.data.sync.SyncManager
+import com.example.financeapp.data.sync.TransactionRepositoryOfflineFirst
 import com.example.financeapp.domain.repository.DataSourceConfigRepository
 import com.example.financeapp.domain.repository.TransactionRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
@@ -46,9 +49,10 @@ val appModule = module {
             androidContext(),
             AppDatabase::class.java,
             "finance_database"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
     single { get<AppDatabase>().transactionDao() }
+    single { get<AppDatabase>().syncDao() }
     single<TransactionRepository>(named("room")) {
         TransactionRepositoryRoomImpl(get())
     }
@@ -76,13 +80,30 @@ val appModule = module {
         TransactionRepositoryRemoteImpl(get(), get())
     }
 
+    // === Offline First ===
+    single { ConnectivityObserver(androidContext()) }
+    single {
+        SyncManager(
+            syncDao = get(),
+            transactionDao = get(),
+            connectivityObserver = get(),
+            configRepositorio = get(),
+            repositorioRemote = get(named("remote")),
+            repositorioFirebase = get(named("firebase"))
+        )
+    }
+    single<TransactionRepository>(named("offlineFirst")) {
+        TransactionRepositoryOfflineFirst(get(), get())
+    }
+
     // === Provider ===
     single {
         RepositoryProvider(
             configRepositorio = get(),
             repositorioRoom = get(named("room")),
             repositorioRemote = get(named("remote")),
-            repositorioFirebase = get(named("firebase"))
+            repositorioFirebase = get(named("firebase")),
+            repositorioOfflineFirst = get(named("offlineFirst"))
         )
     }
 

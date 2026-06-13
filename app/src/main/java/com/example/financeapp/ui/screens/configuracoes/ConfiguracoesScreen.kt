@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
@@ -102,6 +103,17 @@ fun ConfiguracoesScreen(
                 aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.FIREBASE) }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Opção Offline First
+            OpcaoOrigem(
+                titulo = "Offline First",
+                descricao = "Local com sincronização automática na nuvem",
+                icone = Icons.Default.CloudSync,
+                selecionada = origemAtual == OrigemDados.OFFLINE_FIRST,
+                aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.OFFLINE_FIRST) }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Indicador visual da tecnologia ativa
@@ -122,6 +134,7 @@ fun ConfiguracoesScreen(
                             OrigemDados.ROOM -> "Room (SQLite Local)"
                             OrigemDados.REMOTE -> "API REST (Retrofit)"
                             OrigemDados.FIREBASE -> "Firebase Firestore"
+                            OrigemDados.OFFLINE_FIRST -> "Offline First (Sync)"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
