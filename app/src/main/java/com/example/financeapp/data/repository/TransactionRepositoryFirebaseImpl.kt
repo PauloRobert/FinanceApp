@@ -11,50 +11,49 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.tasks.await
 
 class TransactionRepositoryFirebaseImpl(
-
     private val dataSource: FirestoreDataSource
-
 ) : TransactionRepository {
-    private val transactions =
-        MutableStateFlow<List<Transaction>>(emptyList())
+
+    // Fluxo interno de transações observadas do Firestore
+    private val transacoes = MutableStateFlow<List<Transaction>>(emptyList())
 
     init {
-        observeTransactions()
+        observarTransacoes()
     }
 
-    private fun observeTransactions() {
+    private fun observarTransacoes() {
         dataSource.transactionsCollection.addSnapshotListener { snapshot, _ ->
             if (snapshot == null) return@addSnapshotListener
 
-            val list = snapshot.documents.mapNotNull { document ->
-                document
+            val lista = snapshot.documents.mapNotNull { documento ->
+                documento
                     .toObject(TransactionFirebaseDto::class.java)
-                    ?.copy(id = document.id)
+                    ?.copy(id = documento.id)
                     ?.toDomain()
             }
-            transactions.value = list
+            transacoes.value = lista
         }
     }
 
-    override fun getTransactions(): Flow<List<Transaction>> {
-        return transactions
+    override fun obterTransacoes(): Flow<List<Transaction>> {
+        return transacoes
     }
 
-    override suspend fun insertTransaction(transaction: Transaction) {
-        val document = dataSource.transactionsCollection.document()
-        val dto = transaction.copy(id = document.id).toFirebaseDto()
-        document.set(dto).await()
+    override suspend fun inserirTransacao(transacao: Transaction) {
+        val documento = dataSource.transactionsCollection.document()
+        val dto = transacao.copy(id = documento.id).toFirebaseDto()
+        documento.set(dto).await()
     }
 
-    override suspend fun deleteTransacrion(id: String) {
+    override suspend fun deletarTransacao(id: String) {
         dataSource.transactionsCollection.document(id).delete().await()
     }
 
-    override suspend fun updateTransacrion(transaction: Transaction) {
+    override suspend fun atualizarTransacao(transacao: Transaction) {
         dataSource
             .transactionsCollection
-            .document(transaction.id)
-            .set(transaction.toFirebaseDto())
+            .document(transacao.id)
+            .set(transacao.toFirebaseDto())
             .await()
     }
 }
