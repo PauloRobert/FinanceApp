@@ -4,8 +4,8 @@ import com.example.financeapp.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
 
 interface TransactionRepository {
-    fun getTransactions(): Flow<List<Transaction>>
-    suspend fun insertTransaction(transactions: Transaction)
-    suspend fun deleteTransacrion(id: String)
-    suspend fun updateTransacrion(transactions: Transaction)
+    fun obterTransacoes(): Flow<List<Transaction>>
+    suspend fun inserirTransacao(transacao: Transaction)
+    suspend fun deletarTransacao(id: String)
+    suspend fun atualizarTransacao(transacao: Transaction)
 }
