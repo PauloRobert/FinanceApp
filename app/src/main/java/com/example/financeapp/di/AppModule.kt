@@ -73,7 +73,7 @@ val appModule = module {
     }
     single { get<Retrofit>().create(TransactionApi::class.java) }
     single<TransactionRepository>(named("remote")) {
-        TransactionRepositoryRemoteImpl(get())
+        TransactionRepositoryRemoteImpl(get(), get())
     }
 
     // === Provider ===
