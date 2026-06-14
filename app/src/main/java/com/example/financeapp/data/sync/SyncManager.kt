@@ -41,22 +41,30 @@ class SyncManager(
     init {
         // Observar conectividade e sincronizar quando voltar online
         escopo.launch {
-            connectivityObserver.observar().collect { conectado ->
-                if (conectado) {
-                    delay(2000) // Aguardar estabilização da rede
-                    sincronizar()
+            try {
+                connectivityObserver.observar().collect { conectado ->
+                    if (conectado) {
+                        delay(2000)
+                        sincronizar()
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao observar conectividade: ${e.message}")
             }
         }
 
         // Sincronização periódica a cada 30 segundos
         escopo.launch {
-            while (true) {
-                delay(30_000)
-                if (connectivityObserver.estaConectado()) {
-                    sincronizar()
+            try {
+                while (true) {
+                    delay(30_000)
+                    if (connectivityObserver.estaConectado()) {
+                        sincronizar()
+                    }
+                    atualizarContadorPendentes()
                 }
-                atualizarContadorPendentes()
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro no sync periódico: ${e.message}")
             }
         }
     }
