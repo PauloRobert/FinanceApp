@@ -12,7 +12,6 @@ import com.example.financeapp.data.repository.TransactionRepositoryFirebaseImpl
 import com.example.financeapp.data.room.database.AppDatabase
 import com.example.financeapp.data.room.repository.TransactionRepositoryRoomImpl
 import com.example.financeapp.data.sync.SyncManager
-import com.example.financeapp.data.sync.TransactionRepositoryOfflineFirst
 import com.example.financeapp.domain.repository.DataSourceConfigRepository
 import com.example.financeapp.domain.repository.TransactionRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
@@ -80,7 +79,7 @@ val appModule = module {
         TransactionRepositoryRemoteImpl(get(), get())
     }
 
-    // === Offline First ===
+    // === Sync (infraestrutura interna) ===
     single { ConnectivityObserver(androidContext()) }
     single {
         SyncManager(
@@ -92,9 +91,6 @@ val appModule = module {
             repositorioFirebase = get(named("firebase"))
         )
     }
-    single<TransactionRepository>(named("offlineFirst")) {
-        TransactionRepositoryOfflineFirst(get(), get())
-    }
 
     // === Provider ===
     single {
@@ -102,8 +98,7 @@ val appModule = module {
             configRepositorio = get(),
             repositorioRoom = get(named("room")),
             repositorioRemote = get(named("remote")),
-            repositorioFirebase = get(named("firebase")),
-            repositorioOfflineFirst = get(named("offlineFirst"))
+            repositorioFirebase = get(named("firebase"))
         )
     }
 

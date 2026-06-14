@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
@@ -41,6 +40,12 @@ fun ConfiguracoesScreen(
     viewModel: ConfiguracoesViewModel = koinViewModel()
 ) {
     val origemAtual by viewModel.origemSelecionada.collectAsState()
+
+    // Função que seleciona e redireciona automaticamente
+    fun selecionarEVoltar(origem: OrigemDados) {
+        viewModel.selecionarOrigem(origem)
+        aoVoltar()
+    }
 
     Scaffold(
         topBar = {
@@ -78,7 +83,7 @@ fun ConfiguracoesScreen(
                 descricao = "Banco de dados local no dispositivo",
                 icone = Icons.Default.Storage,
                 selecionada = origemAtual == OrigemDados.ROOM,
-                aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.ROOM) }
+                aoSelecionar = { selecionarEVoltar(OrigemDados.ROOM) }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -89,7 +94,7 @@ fun ConfiguracoesScreen(
                 descricao = "Servidor remoto via HTTP",
                 icone = Icons.Default.Wifi,
                 selecionada = origemAtual == OrigemDados.REMOTE,
-                aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.REMOTE) }
+                aoSelecionar = { selecionarEVoltar(OrigemDados.REMOTE) }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -100,18 +105,7 @@ fun ConfiguracoesScreen(
                 descricao = "Banco de dados em nuvem do Google",
                 icone = Icons.Default.Cloud,
                 selecionada = origemAtual == OrigemDados.FIREBASE,
-                aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.FIREBASE) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Opção Offline First
-            OpcaoOrigem(
-                titulo = "Offline First",
-                descricao = "Local com sincronização automática na nuvem",
-                icone = Icons.Default.CloudSync,
-                selecionada = origemAtual == OrigemDados.OFFLINE_FIRST,
-                aoSelecionar = { viewModel.selecionarOrigem(OrigemDados.OFFLINE_FIRST) }
+                aoSelecionar = { selecionarEVoltar(OrigemDados.FIREBASE) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -134,7 +128,6 @@ fun ConfiguracoesScreen(
                             OrigemDados.ROOM -> "Room (SQLite Local)"
                             OrigemDados.REMOTE -> "API REST (Retrofit)"
                             OrigemDados.FIREBASE -> "Firebase Firestore"
-                            OrigemDados.OFFLINE_FIRST -> "Offline First (Sync)"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -196,4 +189,3 @@ private fun OpcaoOrigem(
         }
     }
 }
-

@@ -159,7 +159,6 @@ class SyncManager(
             OrigemDados.REMOTE -> repositorioRemote
             OrigemDados.FIREBASE -> repositorioFirebase
             OrigemDados.ROOM -> null // Room não precisa sincronizar
-            OrigemDados.OFFLINE_FIRST -> repositorioFirebase // Sync padrão com Firebase
         }
     }
 

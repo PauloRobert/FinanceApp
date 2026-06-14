@@ -4,7 +4,6 @@ package com.example.financeapp.domain.model
 enum class OrigemDados {
     ROOM,
     REMOTE,
-    FIREBASE,
-    OFFLINE_FIRST
+    FIREBASE
 }
 
