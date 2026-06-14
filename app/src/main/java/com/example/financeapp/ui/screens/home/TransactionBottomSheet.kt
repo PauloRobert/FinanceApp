@@ -7,22 +7,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,7 +56,6 @@ fun TransactionBottomSheet(
     var amount by remember { mutableStateOf("") }
     var isIncome by remember { mutableStateOf(true) }
 
-
     var descriptionError by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
 
@@ -62,6 +64,9 @@ fun TransactionBottomSheet(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+
+    val scrollState = rememberScrollState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(transaction) {
         transaction?.let {
@@ -77,14 +82,18 @@ fun TransactionBottomSheet(
             amount = it.amount.multiply(BigDecimal(100)).toBigInteger().toString()
             isIncome = it.type == TransactionType.INCOME
         }
-
     }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
             Text(
@@ -121,28 +130,26 @@ fun TransactionBottomSheet(
                 )
             }
 
-            //descrição
+            // Descrição
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Descrição") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = descriptionError,
-
-                )
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            //Valor
+
+            // Valor
             OutlinedTextField(
                 value = amountField,
                 onValueChange = { newValue ->
-
                     val digits = newValue.text.replace("\\D".toRegex(), "")
                     amount = digits
                     val formatted = formatCurrency(digits)
-
                     amountField = TextFieldValue(
                         text = formatted,
-                        selection = androidx.compose.ui.text.TextRange(formatted.length)
+                        selection = TextRange(formatted.length)
                     )
                     amountError = false
                 },
@@ -152,7 +159,8 @@ fun TransactionBottomSheet(
                 isError = amountError
             )
             Spacer(modifier = Modifier.height(8.dp))
-            //tipo
+
+            // Tipo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -174,22 +182,19 @@ fun TransactionBottomSheet(
                 Text("Preencha todos os campos", color = Color.Red)
             }
 
-            Button(onClick = {
-                //123456.0
-                val value = amount.toBigDecimalOrNull()?.divide(BigDecimal(100)) ?: BigDecimal.ZERO
-                descriptionError = description.isBlank()
-                amountError = value <= BigDecimal.ZERO
+            Button(
+                onClick = {
+                    val value = amount.toBigDecimalOrNull()?.divide(BigDecimal(100)) ?: BigDecimal.ZERO
+                    descriptionError = description.isBlank()
+                    amountError = value <= BigDecimal.ZERO
 
-                if (!descriptionError && !amountError) {
-                    Log.d("SalvarBanco", dateTime.toString())
-                    Log.d("SalvarBanco", description)
-                    Log.d("SalvarBanco", value.toString())
-                    Log.d("SalvarBanco", isIncome.toString())
-                    onSave(description, value, dateTime, isIncome)
-                }
+                    if (!descriptionError && !amountError) {
+                        onSave(description, value, dateTime, isIncome)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Salvar") }
 
-            })
-            { Text("Salvar") }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
