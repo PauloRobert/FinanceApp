@@ -2,8 +2,22 @@ package com.example.financeapp.data.remote.api
 
 import com.example.financeapp.data.remote.dto.BeneficiaryCreateRequest
 import com.example.financeapp.data.remote.dto.BeneficiaryDto
+import com.example.financeapp.data.remote.dto.CardCreateDto
+import com.example.financeapp.data.remote.dto.CardDto
+import com.example.financeapp.data.remote.dto.CardTransactionListDto
+import com.example.financeapp.data.remote.dto.CardUpdateDto
+import com.example.financeapp.data.remote.dto.DepositDto
+import com.example.financeapp.data.remote.dto.DepositListDto
+import com.example.financeapp.data.remote.dto.DepositRequestDto
+import com.example.financeapp.data.remote.dto.InvestmentCreateDto
+import com.example.financeapp.data.remote.dto.InvestmentDashboardDto
+import com.example.financeapp.data.remote.dto.InvestmentDto
+import com.example.financeapp.data.remote.dto.InvestmentListDto
 import com.example.financeapp.data.remote.dto.LoginRequest
 import com.example.financeapp.data.remote.dto.MessageResponse
+import com.example.financeapp.data.remote.dto.PaymentDto
+import com.example.financeapp.data.remote.dto.PaymentListDto
+import com.example.financeapp.data.remote.dto.PaymentRequestDto
 import com.example.financeapp.data.remote.dto.PasswordChangeRequest
 import com.example.financeapp.data.remote.dto.PrivacyResponse
 import com.example.financeapp.data.remote.dto.PrivacyUpdateRequest
@@ -132,5 +146,39 @@ interface TransactionApi {
 
     @GET("transfers/history")
     suspend fun obterHistoricoTransferencias(): TransferListDto
+
+    // ── Deposits ────────────────────────────────────────
+    @POST("deposits/")
+    suspend fun criarDeposito(@Body dados: DepositRequestDto): DepositDto
+    @GET("deposits/")
+    suspend fun listarDepositos(): DepositListDto
+
+    // ── Payments ────────────────────────────────────────
+    @POST("payments/")
+    suspend fun criarPagamento(@Body dados: PaymentRequestDto): PaymentDto
+    @GET("payments/")
+    suspend fun listarPagamentos(): PaymentListDto
+
+    // ── Cards ───────────────────────────────────────────
+    @GET("cards/")
+    suspend fun listarCartoes(): List<CardDto>
+    @POST("cards/")
+    suspend fun criarCartao(@Body dados: CardCreateDto): CardDto
+    @PUT("cards/{id}")
+    suspend fun atualizarCartao(@Path("id") id: String, @Body dados: CardUpdateDto): CardDto
+    @DELETE("cards/{id}")
+    suspend fun cancelarCartao(@Path("id") id: String): MessageResponse
+    @GET("cards/{id}/transactions")
+    suspend fun listarTransacoesCartao(@Path("id") id: String): CardTransactionListDto
+
+    // ── Investments ─────────────────────────────────────
+    @GET("investments/dashboard")
+    suspend fun obterInvestmentDashboard(): InvestmentDashboardDto
+    @GET("investments/")
+    suspend fun listarInvestimentos(): InvestmentListDto
+    @POST("investments/")
+    suspend fun criarInvestimento(@Body dados: InvestmentCreateDto): InvestmentDto
+    @POST("investments/{id}/redeem")
+    suspend fun resgatarInvestimento(@Path("id") id: String): InvestmentDto
 }
 

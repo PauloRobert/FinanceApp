@@ -11,8 +11,12 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesScreen
+import com.example.financeapp.ui.screens.cartoes.CartoesScreen
+import com.example.financeapp.ui.screens.deposito.DepositoScreen
 import com.example.financeapp.ui.screens.home.HomeScreen
+import com.example.financeapp.ui.screens.investimento.InvestimentoScreen
 import com.example.financeapp.ui.screens.login.LoginScreen
+import com.example.financeapp.ui.screens.pagamento.PagamentoScreen
 import com.example.financeapp.ui.screens.perfil.PerfilScreen
 import com.example.financeapp.ui.screens.pix.MinhasChavesScreen
 import com.example.financeapp.ui.screens.pix.PixEnviarScreen
@@ -65,15 +69,13 @@ fun AppNavigation() {
         }
         composable(Rotas.Home.rota) {
             HomeScreen(
-                aoAbrirConfiguracoes = {
-                    navController.navigate(Rotas.Configuracoes.rota)
-                },
-                aoAbrirPix = {
-                    navController.navigate(Rotas.PixHub.rota)
-                },
-                aoAbrirTransferencia = {
-                    navController.navigate(Rotas.TransferenciaHub.rota)
-                }
+                aoAbrirConfiguracoes = { navController.navigate(Rotas.Configuracoes.rota) },
+                aoAbrirPix = { navController.navigate(Rotas.PixHub.rota) },
+                aoAbrirTransferencia = { navController.navigate(Rotas.TransferenciaHub.rota) },
+                aoAbrirDeposito = { navController.navigate(Rotas.Deposito.rota) },
+                aoAbrirPagamento = { navController.navigate(Rotas.Pagamento.rota) },
+                aoAbrirCartoes = { navController.navigate(Rotas.Cartoes.rota) },
+                aoAbrirInvestimento = { navController.navigate(Rotas.Investimento.rota) }
             )
         }
         composable(Rotas.Configuracoes.rota) {
@@ -182,6 +184,26 @@ fun AppNavigation() {
         }
         composable(Rotas.TransferenciaFavorecidos.rota) {
             FavorecidosScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Deposito.rota) {
+            DepositoScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Pagamento.rota) {
+            PagamentoScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Cartoes.rota) {
+            CartoesScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Investimento.rota) {
+            InvestimentoScreen(
                 aoVoltar = { navController.popBackStack() }
             )
         }

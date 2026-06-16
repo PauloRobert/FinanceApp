@@ -39,15 +39,19 @@ data class QuickAction(
 fun QuickActionsRow(
     modifier: Modifier = Modifier,
     aoAbrirPix: () -> Unit = {},
-    aoAbrirTransferencia: () -> Unit = {}
+    aoAbrirTransferencia: () -> Unit = {},
+    aoAbrirDeposito: () -> Unit = {},
+    aoAbrirPagamento: () -> Unit = {},
+    aoAbrirCartoes: () -> Unit = {},
+    aoAbrirInvestimento: () -> Unit = {}
 ) {
     val actions = listOf(
         QuickAction("Pix", Icons.Default.Pix, aoAbrirPix),
         QuickAction("Transferir", Icons.Default.SwapHoriz, aoAbrirTransferencia),
-        QuickAction("Depositar", Icons.Default.AccountBalance),
-        QuickAction("Pagar", Icons.Default.Receipt),
-        QuickAction("Cartões", Icons.Default.CreditCard),
-        QuickAction("Investir", Icons.Default.Savings)
+        QuickAction("Depositar", Icons.Default.AccountBalance, aoAbrirDeposito),
+        QuickAction("Pagar", Icons.Default.Receipt, aoAbrirPagamento),
+        QuickAction("Cartões", Icons.Default.CreditCard, aoAbrirCartoes),
+        QuickAction("Investir", Icons.Default.Savings, aoAbrirInvestimento)
     )
 
     LazyRow(

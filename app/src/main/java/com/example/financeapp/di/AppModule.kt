@@ -5,10 +5,12 @@ import com.example.financeapp.data.auth.TokenManager
 import com.example.financeapp.data.remote.api.AuthInterceptor
 import com.example.financeapp.data.remote.api.TransactionApi
 import com.example.financeapp.data.remote.repository.TransactionRepositoryRemoteImpl
+import com.example.financeapp.data.remote.repository.FinanceRepositoryImpl
 import com.example.financeapp.data.remote.repository.PixRepositoryImpl
 import com.example.financeapp.data.remote.repository.TransferRepositoryImpl
 import com.example.financeapp.data.remote.repository.UserRepositoryImpl
 import com.example.financeapp.domain.repository.AuthRepository
+import com.example.financeapp.domain.repository.FinanceRepository
 import com.example.financeapp.domain.repository.PixRepository
 import com.example.financeapp.domain.repository.TransactionRepository
 import com.example.financeapp.domain.repository.TransferRepository
@@ -23,7 +25,11 @@ import com.example.financeapp.domain.usecase.UpdateTransactionUseCase
 import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesViewModel
 import com.example.financeapp.ui.screens.home.HomeViewModel
+import com.example.financeapp.ui.screens.investimento.InvestimentoViewModel
 import com.example.financeapp.ui.screens.login.LoginViewModel
+import com.example.financeapp.ui.screens.deposito.DepositoViewModel
+import com.example.financeapp.ui.screens.pagamento.PagamentoViewModel
+import com.example.financeapp.ui.screens.cartoes.CartoesViewModel
 import com.example.financeapp.ui.screens.perfil.PerfilViewModel
 import com.example.financeapp.ui.screens.pix.MinhasChavesViewModel
 import com.example.financeapp.ui.screens.pix.PixEnviarViewModel
@@ -85,6 +91,9 @@ val appModule = module {
     // === Repositório Transferência ===
     single<TransferRepository> { TransferRepositoryImpl(get(), get(), get()) }
 
+    // === Repositório Finance ===
+    single<FinanceRepository> { FinanceRepositoryImpl(get(), get(), get()) }
+
     // === Use Cases de Auth ===
     factory { LoginUseCase(get()) }
     factory { RegistrarUseCase(get()) }
@@ -113,4 +122,8 @@ val appModule = module {
     viewModel { TransferenciaHubViewModel(get()) }
     viewModel { TransferenciaEnviarViewModel(get()) }
     viewModel { FavorecidosViewModel(get()) }
+    viewModel { DepositoViewModel(get()) }
+    viewModel { PagamentoViewModel(get()) }
+    viewModel { CartoesViewModel(get()) }
+    viewModel { InvestimentoViewModel(get()) }
 }

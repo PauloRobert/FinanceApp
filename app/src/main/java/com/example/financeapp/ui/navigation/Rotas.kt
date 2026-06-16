@@ -23,5 +23,9 @@ sealed class Rotas(val rota: String) {
         fun criarRota(favId: String) = "transferencia_enviar/$favId"
     }
     data object TransferenciaFavorecidos : Rotas("transferencia_favorecidos")
+    data object Deposito : Rotas("deposito")
+    data object Pagamento : Rotas("pagamento")
+    data object Cartoes : Rotas("cartoes")
+    data object Investimento : Rotas("investimento")
 }
 

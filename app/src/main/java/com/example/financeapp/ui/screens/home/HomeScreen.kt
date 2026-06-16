@@ -57,6 +57,10 @@ fun HomeScreen(
     aoAbrirConfiguracoes: () -> Unit = {},
     aoAbrirPix: () -> Unit = {},
     aoAbrirTransferencia: () -> Unit = {},
+    aoAbrirDeposito: () -> Unit = {},
+    aoAbrirPagamento: () -> Unit = {},
+    aoAbrirCartoes: () -> Unit = {},
+    aoAbrirInvestimento: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -187,7 +191,14 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     // Ações rápidas
-                    QuickActionsRow(aoAbrirPix = aoAbrirPix, aoAbrirTransferencia = aoAbrirTransferencia)
+                    QuickActionsRow(
+                        aoAbrirPix = aoAbrirPix,
+                        aoAbrirTransferencia = aoAbrirTransferencia,
+                        aoAbrirDeposito = aoAbrirDeposito,
+                        aoAbrirPagamento = aoAbrirPagamento,
+                        aoAbrirCartoes = aoAbrirCartoes,
+                        aoAbrirInvestimento = aoAbrirInvestimento
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
