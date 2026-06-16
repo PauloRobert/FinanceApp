@@ -157,7 +157,7 @@ fun LoginScreen(
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Ícone de usuário",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = IFLilacLight
                         )
                     },
                     singleLine = true,
@@ -165,9 +165,13 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = IFLilacLight,
+                        focusedBorderColor = IFLilacLight,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                        focusedLabelColor = IFLilacLight,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
                     ),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
@@ -188,7 +192,7 @@ fun LoginScreen(
                         Icon(
                             Icons.Default.Lock,
                             contentDescription = "Ícone de senha",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = IFLilacLight
                         )
                     },
                     trailingIcon = {
@@ -198,7 +202,7 @@ fun LoginScreen(
                                 else Icons.Default.Visibility,
                                 contentDescription = if (senhaVisivel) "Ocultar senha"
                                 else "Mostrar senha",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = Color.White.copy(alpha = 0.6f)
                             )
                         }
                     },
@@ -209,9 +213,13 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = IFLilacLight,
+                        focusedBorderColor = IFLilacLight,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                        focusedLabelColor = IFLilacLight,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
                     ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
