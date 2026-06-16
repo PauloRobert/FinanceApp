@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.financeapp.domain.model.OrigemDados
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
 import kotlinx.coroutines.launch
@@ -133,20 +132,6 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             SummarySection(estado)
-            Spacer(modifier = Modifier.height(4.dp))
-            // Indicador discreto da fonte de dados ativa
-            Text(
-                text = "Fonte: ${
-                    when (estado.origemAtual) {
-                        OrigemDados.ROOM -> "Room (Local)"
-                        OrigemDados.REMOTE -> "API REST"
-                        OrigemDados.FIREBASE -> "Firebase"
-                    }
-                }",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp)
-            )
             Spacer(modifier = Modifier.height(12.dp))
 
             if (estado.carregando) {
