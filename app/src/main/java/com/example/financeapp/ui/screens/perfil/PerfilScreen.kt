@@ -56,6 +56,7 @@ fun PerfilScreen(
         estado.mensagemSucesso?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.limparMensagens()
+            aoVoltar()
         }
         estado.mensagemErro?.let {
             snackbarHostState.showSnackbar(it)
