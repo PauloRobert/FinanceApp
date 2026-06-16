@@ -5,8 +5,10 @@ import com.example.financeapp.data.auth.TokenManager
 import com.example.financeapp.data.remote.api.AuthInterceptor
 import com.example.financeapp.data.remote.api.TransactionApi
 import com.example.financeapp.data.remote.repository.TransactionRepositoryRemoteImpl
+import com.example.financeapp.data.remote.repository.UserRepositoryImpl
 import com.example.financeapp.domain.repository.AuthRepository
 import com.example.financeapp.domain.repository.TransactionRepository
+import com.example.financeapp.domain.repository.UserRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
 import com.example.financeapp.domain.usecase.GetTransactionsUseCase
 import com.example.financeapp.domain.usecase.InsertTransactionsUseCase
@@ -18,7 +20,10 @@ import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesViewModel
 import com.example.financeapp.ui.screens.home.HomeViewModel
 import com.example.financeapp.ui.screens.login.LoginViewModel
+import com.example.financeapp.ui.screens.perfil.PerfilViewModel
+import com.example.financeapp.ui.screens.privacidade.PrivacidadeViewModel
 import com.example.financeapp.ui.screens.registro.RegistroViewModel
+import com.example.financeapp.ui.screens.seguranca.SegurancaViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -59,6 +64,9 @@ val appModule = module {
     // === Repositório de Transações (API REST) ===
     single<TransactionRepository> { TransactionRepositoryRemoteImpl(get(), get(), get()) }
 
+    // === Repositório de Usuário ===
+    single<UserRepository> { UserRepositoryImpl(get(), get(), get()) }
+
     // === Use Cases de Auth ===
     factory { LoginUseCase(get()) }
     factory { RegistrarUseCase(get()) }
@@ -76,4 +84,7 @@ val appModule = module {
     viewModel { ConfiguracoesViewModel(get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { RegistroViewModel(get()) }
+    viewModel { PerfilViewModel(get()) }
+    viewModel { SegurancaViewModel(get()) }
+    viewModel { PrivacidadeViewModel(get()) }
 }

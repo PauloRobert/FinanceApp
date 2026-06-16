@@ -11,7 +11,10 @@ import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesScreen
 import com.example.financeapp.ui.screens.home.HomeScreen
 import com.example.financeapp.ui.screens.login.LoginScreen
+import com.example.financeapp.ui.screens.perfil.PerfilScreen
+import com.example.financeapp.ui.screens.privacidade.PrivacidadeScreen
 import com.example.financeapp.ui.screens.registro.RegistroScreen
+import com.example.financeapp.ui.screens.seguranca.SegurancaScreen
 import org.koin.compose.koinInject
 
 @Composable
@@ -20,13 +23,11 @@ fun AppNavigation() {
     val verificarSessao: VerificarSessaoUseCase = koinInject()
     val estaLogado by verificarSessao().collectAsState(initial = false)
 
-    // Determina startDestination baseado na sessão
     NavHost(
         navController = navController,
         startDestination = Rotas.Login.rota
     ) {
         composable(Rotas.Login.rota) {
-            // Se já está logado, navegar direto para Home
             LaunchedEffect(estaLogado) {
                 if (estaLogado) {
                     navController.navigate(Rotas.Home.rota) {
@@ -66,7 +67,31 @@ fun AppNavigation() {
                     navController.navigate(Rotas.Login.rota) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                aoAbrirPerfil = {
+                    navController.navigate(Rotas.Perfil.rota)
+                },
+                aoAbrirSeguranca = {
+                    navController.navigate(Rotas.Seguranca.rota)
+                },
+                aoAbrirPrivacidade = {
+                    navController.navigate(Rotas.Privacidade.rota)
                 }
+            )
+        }
+        composable(Rotas.Perfil.rota) {
+            PerfilScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Seguranca.rota) {
+            SegurancaScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Privacidade.rota) {
+            PrivacidadeScreen(
+                aoVoltar = { navController.popBackStack() }
             )
         }
     }

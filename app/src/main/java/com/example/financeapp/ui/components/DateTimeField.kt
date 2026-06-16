@@ -30,7 +30,8 @@ fun DateTimeField(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -39,11 +40,21 @@ fun DateTimeField(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = dateTime, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Data e hora",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = dateTime,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
             Icon(
-                imageVector =  Icons.Default.DateRange,
-                contentDescription = null
+                imageVector = Icons.Default.DateRange,
+                contentDescription = "Selecionar data",
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }

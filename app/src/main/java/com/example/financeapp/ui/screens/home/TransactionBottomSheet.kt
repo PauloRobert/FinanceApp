@@ -13,12 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
 import com.example.financeapp.ui.components.DatePickerDialogComponent
 import com.example.financeapp.ui.components.DateTimeField
+import com.example.financeapp.ui.components.GradientButton
 import com.example.financeapp.ui.components.TimePickerDialogComponent
 import com.example.financeapp.utils.formatCurrency
 import com.example.financeapp.utils.formatCurrencyBr
@@ -86,7 +88,8 @@ fun TransactionBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -94,13 +97,15 @@ fun TransactionBottomSheet(
                 .navigationBarsPadding()
                 .imePadding()
                 .verticalScroll(scrollState)
-                .padding(16.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Text(
                 if (transaction == null) "Nova transação" else "Editar transação",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             DateTimeField(
                 dateTime = dateTime.format(formatter),
@@ -130,6 +135,8 @@ fun TransactionBottomSheet(
                 )
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
             // Descrição
             OutlinedTextField(
                 value = description,
@@ -137,8 +144,14 @@ fun TransactionBottomSheet(
                 label = { Text("Descrição") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = descriptionError,
+                shape = MaterialTheme.shapes.medium,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                )
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Valor
             OutlinedTextField(
@@ -156,33 +169,47 @@ fun TransactionBottomSheet(
                 label = { Text("Valor") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                isError = amountError
+                isError = amountError,
+                shape = MaterialTheme.shapes.medium,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                )
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Tipo
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FilterChip(
                     selected = isIncome,
                     onClick = { isIncome = true },
-                    label = { Text("Entrada") }
+                    label = { Text("Entrada") },
+                    modifier = Modifier.weight(1f)
                 )
                 FilterChip(
                     selected = !isIncome,
                     onClick = { isIncome = false },
-                    label = { Text("Saída") }
+                    label = { Text("Saída") },
+                    modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (descriptionError || amountError) {
-                Text("Preencha todos os campos", color = Color.Red)
+                Text(
+                    "Preencha todos os campos",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Button(
+            GradientButton(
+                text = "Salvar",
                 onClick = {
                     val value = amount.toBigDecimalOrNull()?.divide(BigDecimal(100)) ?: BigDecimal.ZERO
                     descriptionError = description.isBlank()
@@ -193,9 +220,9 @@ fun TransactionBottomSheet(
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Salvar") }
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
