@@ -2,11 +2,10 @@ package com.example.financeapp.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.financeapp.data.provider.RepositoryProvider
-import com.example.financeapp.domain.model.OrigemDados
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
 import com.example.financeapp.domain.repository.AuthRepository
+import com.example.financeapp.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +16,7 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 
 class HomeViewModel(
-    private val repositoryProvider: RepositoryProvider,
+    private val repositorio: TransactionRepository,
     private val authRepositorio: AuthRepository
 ) : ViewModel() {
 
@@ -26,14 +25,13 @@ class HomeViewModel(
 
     init {
         observarTransacoes()
-        observarOrigem()
         observarNomeUsuario()
     }
 
-    // Observa transações reagindo automaticamente à troca de origem
+    // Observa transações da API REST
     private fun observarTransacoes() {
         viewModelScope.launch {
-            repositoryProvider.obterTransacoes()
+            repositorio.obterTransacoes()
                 .onStart {
                     _estado.value = _estado.value.copy(carregando = true)
                 }
@@ -49,15 +47,6 @@ class HomeViewModel(
                         carregando = false
                     )
                 }
-        }
-    }
-
-    // Observa a origem de dados atual
-    private fun observarOrigem() {
-        viewModelScope.launch {
-            repositoryProvider.origemAtual.collect { origem ->
-                _estado.value = _estado.value.copy(origemAtual = origem)
-            }
         }
     }
 
@@ -84,7 +73,7 @@ class HomeViewModel(
                     date = data,
                     type = if (ehEntrada) TransactionType.INCOME else TransactionType.EXPENSE
                 )
-                repositoryProvider.obterRepositorioAtivo().inserirTransacao(transacao)
+                repositorio.inserirTransacao(transacao)
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao adicionar transação: ${e.message}"
@@ -96,7 +85,7 @@ class HomeViewModel(
     fun atualizarTransacao(transacao: Transaction) {
         viewModelScope.launch {
             try {
-                repositoryProvider.obterRepositorioAtivo().atualizarTransacao(transacao)
+                repositorio.atualizarTransacao(transacao)
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao atualizar transação: ${e.message}"
@@ -108,7 +97,7 @@ class HomeViewModel(
     fun deletarTransacao(transacao: Transaction) {
         viewModelScope.launch {
             try {
-                repositoryProvider.obterRepositorioAtivo().deletarTransacao(transacao.id)
+                repositorio.deletarTransacao(transacao.id)
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao excluir transação: ${e.message}"
