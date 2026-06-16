@@ -27,5 +27,6 @@ sealed class Rotas(val rota: String) {
     data object Pagamento : Rotas("pagamento")
     data object Cartoes : Rotas("cartoes")
     data object Investimento : Rotas("investimento")
+    data object Extrato : Rotas("extrato")
 }
 

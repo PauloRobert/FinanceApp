@@ -1,5 +1,8 @@
 package com.example.financeapp.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,11 +43,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
 import com.example.financeapp.ui.components.EmptyStateView
+import com.example.financeapp.ui.components.IFBankBackground
 import com.example.financeapp.ui.components.IFBankHeader
 import com.example.financeapp.ui.components.InsightsRow
 import com.example.financeapp.ui.components.QuickActionsRow
@@ -61,6 +67,7 @@ fun HomeScreen(
     aoAbrirPagamento: () -> Unit = {},
     aoAbrirCartoes: () -> Unit = {},
     aoAbrirInvestimento: () -> Unit = {},
+    aoExportarExtrato: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -88,7 +95,7 @@ fun HomeScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -156,6 +163,7 @@ fun HomeScreen(
             )
         }
 
+        IFBankBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -181,12 +189,17 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier.padding(horizontal = 20.dp)
                 ) {
-                    // Balance Card com gradiente
-                    SummarySection(
-                        state = estado,
-                        saldoVisivel = saldoVisivel,
-                        aoAlternarVisibilidade = { saldoVisivel = !saldoVisivel }
-                    )
+                    // Balance Card com gradiente — animate in
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn() + slideInVertically { -40 }
+                    ) {
+                        SummarySection(
+                            state = estado,
+                            saldoVisivel = saldoVisivel,
+                            aoAlternarVisibilidade = { saldoVisivel = !saldoVisivel }
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -224,11 +237,21 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Text(
-                            text = "${estado.transacoes.size} itens",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = aoExportarExtrato) {
+                                Icon(
+                                    Icons.Default.FileDownload,
+                                    contentDescription = "Exportar",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    " Exportar",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -252,6 +275,7 @@ fun HomeScreen(
                 }
             }
         }
+        } // IFBankBackground
 
         if (mostrarBottomSheet) {
             TransactionBottomSheet(
