@@ -2,8 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -57,12 +55,6 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.androidx.material3)
     implementation(libs.material.icons)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.firestore)
-    // Room
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
