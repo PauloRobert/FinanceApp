@@ -1,10 +1,12 @@
 package com.example.financeapp.data.remote.api
 
 import com.example.financeapp.data.remote.dto.LoginRequest
+import com.example.financeapp.data.remote.dto.RegisterRequest
 import com.example.financeapp.data.remote.dto.TokenResponse
 import com.example.financeapp.data.remote.dto.TransactionListResponse
 import com.example.financeapp.data.remote.dto.TransactionRemoteDto
 import com.example.financeapp.data.remote.dto.TransactionRequest
+import com.example.financeapp.data.remote.dto.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -16,6 +18,9 @@ interface TransactionApi {
 
     @POST("auth/login")
     suspend fun login(@Body credenciais: LoginRequest): TokenResponse
+
+    @POST("auth/register")
+    suspend fun registrar(@Body dados: RegisterRequest): UserResponse
 
     @GET("transactions")
     suspend fun obterTransacoes(): TransactionListResponse
