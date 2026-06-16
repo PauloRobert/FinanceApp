@@ -1,5 +1,6 @@
 package com.example.financeapp.ui.screens.home
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,12 +24,14 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.financeapp.domain.model.OrigemDados
@@ -49,11 +53,30 @@ fun HomeScreen(
     val escopo = rememberCoroutineScope()
     var mostrarDialogoExclusao by remember { mutableStateOf(false) }
 
+    // Exibir erros via Snackbar
+    LaunchedEffect(estado.mensagemErro) {
+        estado.mensagemErro?.let { mensagem ->
+            snackbarHostState.showSnackbar(mensagem)
+            viewModel.limparErro()
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Finance App") },
+                title = {
+                    Column {
+                        Text("Finance App")
+                        if (estado.nomeUsuario.isNotBlank()) {
+                            Text(
+                                text = "Olá, ${estado.nomeUsuario}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = aoAbrirConfiguracoes) {
                         Icon(Icons.Default.Settings, contentDescription = "Configurações")
@@ -125,17 +148,38 @@ fun HomeScreen(
                 modifier = Modifier.padding(start = 4.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
-            TransactionList(
-                estado,
-                onEdit = { transacao ->
-                    transacaoSelecionada = transacao
-                    mostrarBottomSheet = true
-                },
-                onDelete = { transacao ->
-                    transacaoSelecionada = transacao
-                    mostrarDialogoExclusao = true
+
+            if (estado.carregando) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-            )
+            } else if (estado.transacoes.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nenhuma transação encontrada",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                TransactionList(
+                    estado,
+                    onEdit = { transacao ->
+                        transacaoSelecionada = transacao
+                        mostrarBottomSheet = true
+                    },
+                    onDelete = { transacao ->
+                        transacaoSelecionada = transacao
+                        mostrarDialogoExclusao = true
+                    }
+                )
+            }
         }
 
         if (mostrarBottomSheet) {
