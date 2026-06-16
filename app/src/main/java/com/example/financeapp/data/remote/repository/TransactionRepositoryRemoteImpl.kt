@@ -1,70 +1,53 @@
 package com.example.financeapp.data.remote.repository
 
+import com.example.financeapp.data.auth.TokenManager
 import com.example.financeapp.data.remote.api.AuthInterceptor
 import com.example.financeapp.data.remote.api.TransactionApi
-import com.example.financeapp.data.remote.dto.LoginRequest
 import com.example.financeapp.data.remote.mapper.toDomain
 import com.example.financeapp.data.remote.mapper.toRequest
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.repository.TransactionRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 
 class TransactionRepositoryRemoteImpl(
     private val api: TransactionApi,
-    private val authInterceptor: AuthInterceptor
+    private val authInterceptor: AuthInterceptor,
+    private val tokenManager: TokenManager
 ) : TransactionRepository {
 
-    // Credenciais padrão para autenticação automática
-    private val credenciais = LoginRequest(
-        username = "paulo",
-        password = "paulo123"
-    )
-
-    private var autenticado = false
-
-    // Realiza login e armazena o token no interceptor
-    private suspend fun autenticar() {
-        if (autenticado) return
-        try {
-            val resposta = api.login(credenciais)
-            authInterceptor.atualizarToken(resposta.accessToken)
-            autenticado = true
-        } catch (e: Exception) {
-            autenticado = false
+    // Restaura o token do DataStore no interceptor antes de cada chamada
+    private suspend fun garantirToken() {
+        val token = tokenManager.obterToken().first()
+        if (!token.isNullOrBlank()) {
+            authInterceptor.atualizarToken(token)
         }
     }
 
-    // Polling a cada 5 segundos para manter os dados atualizados
     override fun obterTransacoes(): Flow<List<Transaction>> = flow {
-        while (true) {
-            try {
-                autenticar()
-                val resposta = api.obterTransacoes()
-                val transacoes = resposta.transactions.map { it.toDomain() }
-                emit(transacoes)
-            } catch (e: Exception) {
-                // Em caso de 401, tenta reautenticar na próxima iteração
-                autenticado = false
-                emit(emptyList())
-            }
-            delay(5000L)
+        garantirToken()
+        try {
+            val resposta = api.obterTransacoes()
+            val transacoes = resposta.transactions.map { it.toDomain() }
+            emit(transacoes)
+        } catch (e: Exception) {
+            emit(emptyList())
         }
     }
 
     override suspend fun inserirTransacao(transacao: Transaction) {
-        autenticar()
+        garantirToken()
         api.criarTransacao(transacao.toRequest())
     }
 
     override suspend fun deletarTransacao(id: String) {
-        autenticar()
+        garantirToken()
         api.deletarTransacao(id)
     }
 
     override suspend fun atualizarTransacao(transacao: Transaction) {
-        autenticar()
+        garantirToken()
         api.atualizarTransacao(transacao.id, transacao.toRequest())
     }
 }
