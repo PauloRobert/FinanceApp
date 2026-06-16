@@ -1,5 +1,7 @@
 package com.example.financeapp.ui.screens.pix
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,6 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -39,14 +44,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +65,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financeapp.data.remote.dto.PixKeyDto
 import com.example.financeapp.domain.repository.PixRepository
+import com.example.financeapp.ui.components.GradientButton
+import com.example.financeapp.utils.formatCurrency
+import com.example.financeapp.utils.generateQrCodeBitmap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,6 +81,9 @@ data class PixReceberUiState(
     val carregando: Boolean = false,
     val chaves: List<PixKeyDto> = emptyList(),
     val chaveSelecionada: PixKeyDto? = null,
+    val valorCobranca: String = "",
+    val qrCodeBitmap: Bitmap? = null,
+    val qrCodePayload: String? = null,
     val mensagem: String? = null
 )
 
@@ -83,20 +100,57 @@ class PixReceberViewModel(
 
     private fun carregar() {
         viewModelScope.launch {
-                _estado.update { it.copy(carregando = true) }
-                try {
-                    val chaves = pixRepository.listarChaves()
-                    _estado.update {
-                        it.copy(
-                            carregando = false,
-                            chaves = chaves,
-                            chaveSelecionada = chaves.firstOrNull()
-                        )
-                    }
-                } catch (e: Exception) {
-                    _estado.update { it.copy(carregando = false, mensagem = "Erro ao carregar chaves") }
+            _estado.update { it.copy(carregando = true) }
+            try {
+                val chaves = pixRepository.listarChaves()
+                _estado.update {
+                    it.copy(
+                        carregando = false,
+                        chaves = chaves,
+                        chaveSelecionada = chaves.firstOrNull()
+                    )
                 }
+            } catch (e: Exception) {
+                _estado.update { it.copy(carregando = false, mensagem = "Erro ao carregar chaves") }
             }
+        }
+    }
+
+    fun atualizarValorCobranca(digitos: String) {
+        _estado.update { it.copy(valorCobranca = digitos, qrCodeBitmap = null, qrCodePayload = null) }
+    }
+
+    fun gerarQrCode() {
+        val state = _estado.value
+        val chave = state.chaveSelecionada ?: return
+        val valorCentavos = state.valorCobranca.toLongOrNull() ?: 0L
+        val valorDouble = valorCentavos / 100.0
+
+        // Payload PIX simplificado (EMV standard-like)
+        val payload = buildString {
+            append("00020126")
+            append("0014BR.GOV.BCB.PIX")
+            append("01${String.format("%02d", chave.keyValue.length)}${chave.keyValue}")
+            if (valorDouble > 0) {
+                val valorStr = String.format("%.2f", valorDouble)
+                append("54${String.format("%02d", valorStr.length)}$valorStr")
+            }
+            append("5802BR")
+            append("6009IF Bank")
+        }
+
+        val bitmap = generateQrCodeBitmap(payload, 512)
+        _estado.update {
+            it.copy(
+                qrCodeBitmap = bitmap,
+                qrCodePayload = payload,
+                mensagem = if (bitmap != null) "QR Code gerado!" else "Erro ao gerar QR Code"
+            )
+        }
+    }
+
+    fun selecionarChave(chave: PixKeyDto) {
+        _estado.update { it.copy(chaveSelecionada = chave, qrCodeBitmap = null, qrCodePayload = null) }
     }
 
     fun limparMensagem() {
@@ -149,33 +203,15 @@ fun PixReceberScreen(
             }
         } else if (estado.chaves.isEmpty()) {
             Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(24.dp),
+                Modifier.fillMaxSize().padding(padding).padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Key,
-                        null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    )
+                    Icon(Icons.Default.Key, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Nenhuma chave Pix cadastrada",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("Nenhuma chave Pix cadastrada", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Cadastre uma chave para receber Pix",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center
-                    )
+                    Text("Cadastre uma chave para receber Pix", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), textAlign = TextAlign.Center)
                 }
             }
         } else {
@@ -187,131 +223,194 @@ fun PixReceberScreen(
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // QR Code visual placeholder
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.QrCode2,
-                        "QR Code",
-                        modifier = Modifier.size(120.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    "Escaneie o QR Code para pagar",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Chaves
-                Text(
-                    "Suas chaves Pix",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                estado.chaves.forEach { chave ->
+                // Chave selecionada
+                estado.chaveSelecionada?.let { chave ->
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = MaterialTheme.shapes.medium,
-                        elevation = CardDefaults.cardElevation(1.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        shape = MaterialTheme.shapes.medium
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    Icons.Default.Key,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
                             }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    chave.keyType,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    chave.keyValue,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(chave.keyType, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text(chave.keyValue, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                             IconButton(onClick = {
                                 clipboardManager.setText(AnnotatedString(chave.keyValue))
-                                escopo.launch {
-                                    viewModel.exibirMensagem("Chave copiada!")
-                                }
+                                escopo.launch { viewModel.exibirMensagem("Chave copiada!") }
                             }) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    "Copiar",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Icon(Icons.Default.ContentCopy, "Copiar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                        }
+                    }
+                }
+
+                // Seletor de chaves (se tiver mais de uma)
+                if (estado.chaves.size > 1) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        estado.chaves.forEach { chave ->
+                            androidx.compose.material3.FilterChip(
+                                selected = estado.chaveSelecionada?.id == chave.id,
+                                onClick = { viewModel.selecionarChave(chave) },
+                                label = { Text(chave.keyType, style = MaterialTheme.typography.labelSmall) }
+                            )
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Botões
-                Row(
+                // Campo de valor para cobrança
+                Text(
+                    "Valor da cobrança",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Deixe em branco para QR Code sem valor",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val amountField = remember(estado.valorCobranca) {
+                    val f = formatCurrency(estado.valorCobranca)
+                    TextFieldValue(f, TextRange(f.length))
+                }
+
+                OutlinedTextField(
+                    value = amountField,
+                    onValueChange = { newValue ->
+                        val digits = newValue.text.replace("\\D".toRegex(), "")
+                        viewModel.atualizarValorCobranca(digits)
+                    },
+                    label = { Text("Valor (opcional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    estado.chaveSelecionada?.let { chave ->
-                        OutlinedButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(chave.keyValue))
-                                escopo.launch { viewModel.exibirMensagem("Chave copiada!") }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                GradientButton(
+                    text = "Gerar QR Code",
+                    onClick = { viewModel.gerarQrCode() },
+                    enabled = estado.chaveSelecionada != null
+                )
+
+                // QR Code gerado
+                estado.qrCodeBitmap?.let { bitmap ->
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = MaterialTheme.shapes.large,
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copiar")
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "QR Code Pix",
+                                modifier = Modifier.size(240.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Escaneie para pagar",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Pix Copia e Cola
+                            estado.qrCodePayload?.let { payload ->
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            clipboardManager.setText(AnnotatedString(payload))
+                                            escopo.launch { viewModel.exibirMensagem("Código Pix copiado!") }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = MaterialTheme.shapes.medium
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Copiar código")
+                                    }
+                                    OutlinedButton(
+                                        onClick = { /* Share intent */ },
+                                        modifier = Modifier.weight(1f),
+                                        shape = MaterialTheme.shapes.medium
+                                    ) {
+                                        Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Compartilhar")
+                                    }
+                                }
+                            }
                         }
-                        OutlinedButton(
-                            onClick = { /* Share intent */ },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium
+                    }
+                }
+
+                // Lista de todas as chaves
+                if (estado.qrCodeBitmap == null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Suas chaves Pix", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    estado.chaves.forEach { chave ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = MaterialTheme.shapes.medium,
+                            elevation = CardDefaults.cardElevation(1.dp)
                         ) {
-                            Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Compartilhar")
+                            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(chave.keyType, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(chave.keyValue, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                IconButton(onClick = {
+                                    clipboardManager.setText(AnnotatedString(chave.keyValue))
+                                    escopo.launch { viewModel.exibirMensagem("Chave copiada!") }
+                                }) {
+                                    Icon(Icons.Default.ContentCopy, "Copiar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                 }

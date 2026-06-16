@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -48,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,6 +79,13 @@ fun PixEnviarScreen(
 
     LaunchedEffect(estado.mensagemErro) {
         estado.mensagemErro?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.limparErro()
+        }
+    }
+
+    LaunchedEffect(estado.mensagemSucesso) {
+        estado.mensagemSucesso?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.limparErro()
         }
@@ -215,6 +224,7 @@ private fun EtapaValor(estado: PixEnviarUiState, viewModel: PixEnviarViewModel, 
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline
         ),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         textStyle = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
     )
 

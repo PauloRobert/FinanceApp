@@ -87,7 +87,8 @@ class PixEnviarViewModel(
                     it.copy(
                         enviando = false,
                         comprovante = resultado,
-                        etapa = PixEnviarEtapa.COMPROVANTE
+                        etapa = PixEnviarEtapa.COMPROVANTE,
+                        mensagemSucesso = "Pix de R$ ${String.format("%.2f", valorDouble)} enviado com sucesso!"
                     )
                 }
             } catch (e: retrofit2.HttpException) {
@@ -118,7 +119,7 @@ class PixEnviarViewModel(
     }
 
     fun limparErro() {
-        _estado.update { it.copy(mensagemErro = null) }
+        _estado.update { it.copy(mensagemErro = null, mensagemSucesso = null) }
     }
 
     fun definirChaveInicial(chave: String) {

@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.navigation.compose)
     // Biometric
     implementation(libs.biometric)
+    // QR Code
+    implementation(libs.zxing.core)
 
     coreLibraryDesugaring(libs.android.desugar)
     testImplementation(libs.junit)

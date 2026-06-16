@@ -119,6 +119,9 @@ fun AppNavigation() {
                 aoExtratoPix = { navController.navigate(Rotas.PixHistorico.rota) },
                 aoEnviarParaFavorito = { chave ->
                     navController.navigate(Rotas.PixEnviarFavorito.criarRota(chave))
+                },
+                aoEnviarComChave = { chave ->
+                    navController.navigate(Rotas.PixEnviarFavorito.criarRota(chave))
                 }
             )
         }

@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,11 +74,13 @@ fun PixHubScreen(
     aoMinhasChaves: () -> Unit = {},
     aoExtratoPix: () -> Unit = {},
     aoEnviarParaFavorito: (String) -> Unit = {},
+    aoEnviarComChave: (String) -> Unit = {},
     viewModel: PixHubViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val formatador = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(estado.mensagemErro) {
         estado.mensagemErro?.let {
@@ -144,7 +147,16 @@ fun PixHubScreen(
                     aoEnviarPix = aoEnviarPix,
                     aoReceberPix = aoReceberPix,
                     aoMinhasChaves = aoMinhasChaves,
-                    aoExtratoPix = aoExtratoPix
+                    aoExtratoPix = aoExtratoPix,
+                    aoCopiaECola = {
+                        val texto = clipboardManager.getText()?.text?.trim()
+                        if (!texto.isNullOrBlank()) {
+                            aoEnviarComChave(texto)
+                        } else {
+                            viewModel.limparErro()
+                            aoEnviarPix()
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -268,13 +280,14 @@ private fun PixActionsGrid(
     aoEnviarPix: () -> Unit,
     aoReceberPix: () -> Unit,
     aoMinhasChaves: () -> Unit,
-    aoExtratoPix: () -> Unit
+    aoExtratoPix: () -> Unit,
+    aoCopiaECola: () -> Unit
 ) {
     val actions = listOf(
         Triple("Enviar", Icons.AutoMirrored.Filled.Send, aoEnviarPix),
         Triple("Receber", Icons.Default.Pix, aoReceberPix),
-        Triple("Copia e Cola", Icons.Default.ContentPaste, aoEnviarPix),
-        Triple("QR Code", Icons.Default.QrCode2, aoEnviarPix),
+        Triple("Copia e Cola", Icons.Default.ContentPaste, aoCopiaECola),
+        Triple("QR Code", Icons.Default.QrCode2, aoReceberPix),
         Triple("Chaves", Icons.Default.Key, aoMinhasChaves),
         Triple("Extrato", Icons.Default.History, aoExtratoPix)
     )

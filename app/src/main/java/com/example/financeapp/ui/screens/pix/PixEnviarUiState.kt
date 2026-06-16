@@ -18,7 +18,8 @@ data class PixEnviarUiState(
     val comprovante: PixTransferDto? = null,
     // Meta
     val etapa: PixEnviarEtapa = PixEnviarEtapa.BUSCA,
-    val mensagemErro: String? = null
+    val mensagemErro: String? = null,
+    val mensagemSucesso: String? = null
 )
 
 enum class PixEnviarEtapa {
