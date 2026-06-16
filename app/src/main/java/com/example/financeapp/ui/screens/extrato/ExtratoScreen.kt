@@ -2,6 +2,8 @@ package com.example.financeapp.ui.screens.extrato
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -90,36 +92,89 @@ class ExtratoViewModel(
         }
     }
 
-    fun gerarCsv(context: Context) {
+    fun gerarPdf(context: Context) {
         viewModelScope.launch {
             _estado.update { it.copy(exportando = true) }
             try {
                 val transacoes = getTransacoesFiltradas()
                 val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-                val csv = buildString {
-                    appendLine("Data,Descrição,Tipo,Valor")
-                    transacoes.forEach { tx ->
-                        val tipo = if (tx.type == TransactionType.INCOME) "Entrada" else "Saída"
-                        appendLine("${tx.date.format(formatter)},\"${tx.description}\",$tipo,${tx.amount}")
-                    }
+
+                val doc = PdfDocument()
+                val pageWidth = 595
+                val pageHeight = 842
+                var pageNumber = 1
+                var yPos = 80f
+
+                fun newPage(): PdfDocument.Page {
+                    val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber++).create()
+                    return doc.startPage(pageInfo)
                 }
+
+                var page = newPage()
+                var canvas = page.canvas
+
+                val titlePaint = Paint().apply { textSize = 22f; isFakeBoldText = true; color = android.graphics.Color.rgb(37, 99, 235) }
+                val subtitlePaint = Paint().apply { textSize = 12f; color = android.graphics.Color.rgb(100, 116, 139) }
+                val headerPaint = Paint().apply { textSize = 11f; isFakeBoldText = true; color = android.graphics.Color.rgb(30, 41, 59) }
+                val bodyPaint = Paint().apply { textSize = 10f; color = android.graphics.Color.rgb(30, 41, 59) }
+                val incomePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = android.graphics.Color.rgb(16, 185, 129) }
+                val expensePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = android.graphics.Color.rgb(239, 68, 68) }
+                val linePaint = Paint().apply { color = android.graphics.Color.rgb(203, 213, 225); strokeWidth = 0.5f }
+
+                // Header
+                canvas.drawText("IF Bank", 40f, 50f, titlePaint)
+                canvas.drawText("Extrato Bancário", 40f, 70f, subtitlePaint)
+                canvas.drawText("Gerado em: ${java.time.LocalDateTime.now().format(formatter)}", 300f, 50f, subtitlePaint)
+
+                yPos = 100f
+                canvas.drawLine(40f, yPos, (pageWidth - 40).toFloat(), yPos, linePaint)
+                yPos += 20f
+
+                // Column headers
+                canvas.drawText("Data", 40f, yPos, headerPaint)
+                canvas.drawText("Descrição", 160f, yPos, headerPaint)
+                canvas.drawText("Tipo", 380f, yPos, headerPaint)
+                canvas.drawText("Valor", 450f, yPos, headerPaint)
+                yPos += 5f
+                canvas.drawLine(40f, yPos, (pageWidth - 40).toFloat(), yPos, linePaint)
+                yPos += 15f
+
+                for (tx in transacoes) {
+                    if (yPos > pageHeight - 60) {
+                        doc.finishPage(page)
+                        page = newPage()
+                        canvas = page.canvas
+                        yPos = 50f
+                    }
+                    val tipo = if (tx.type == TransactionType.INCOME) "Entrada" else "Saída"
+                    val paint = if (tx.type == TransactionType.INCOME) incomePaint else expensePaint
+                    val prefix = if (tx.type == TransactionType.INCOME) "+ " else "- "
+
+                    canvas.drawText(tx.date.format(formatter), 40f, yPos, bodyPaint)
+                    canvas.drawText(tx.description.take(30), 160f, yPos, bodyPaint)
+                    canvas.drawText(tipo, 380f, yPos, bodyPaint)
+                    canvas.drawText("${prefix}R$ ${tx.amount}", 450f, yPos, paint)
+                    yPos += 18f
+                }
+
+                doc.finishPage(page)
 
                 val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "IF Bank")
                 dir.mkdirs()
-                val file = File(dir, "extrato_ifbank_${System.currentTimeMillis()}.csv")
-                file.writeText(csv)
+                val file = File(dir, "extrato_ifbank_${System.currentTimeMillis()}.pdf")
+                file.outputStream().use { doc.writeTo(it) }
+                doc.close()
 
-                // Share
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"
+                    type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uri)
                     putExtra(Intent.EXTRA_SUBJECT, "Extrato IF Bank")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 context.startActivity(Intent.createChooser(intent, "Compartilhar extrato"))
 
-                _estado.update { it.copy(exportando = false, mensagem = "Extrato exportado!") }
+                _estado.update { it.copy(exportando = false, mensagem = "PDF exportado!") }
             } catch (e: Exception) {
                 _estado.update { it.copy(exportando = false, mensagem = "Erro ao exportar: ${e.message}") }
             }
@@ -206,13 +261,13 @@ fun ExtratoScreen(
                         CircularProgressIndicator(Modifier.size(32.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 2.dp)
                     } else {
                         OutlinedButton(
-                            onClick = { viewModel.gerarCsv(context) },
+                            onClick = { viewModel.gerarPdf(context) },
                             shape = MaterialTheme.shapes.medium,
                             enabled = transacoesFiltradas.isNotEmpty()
                         ) {
                             Icon(Icons.Default.FileDownload, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Exportar CSV")
+                            Text("Exportar PDF")
                         }
                     }
                 }

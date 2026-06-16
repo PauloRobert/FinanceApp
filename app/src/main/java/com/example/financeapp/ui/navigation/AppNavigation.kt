@@ -27,21 +27,38 @@ import com.example.financeapp.ui.screens.pix.PixReceberScreen
 import com.example.financeapp.ui.screens.privacidade.PrivacidadeScreen
 import com.example.financeapp.ui.screens.registro.RegistroScreen
 import com.example.financeapp.ui.screens.seguranca.SegurancaScreen
+import com.example.financeapp.ui.screens.splash.SplashScreen
 import com.example.financeapp.ui.screens.transferencia.FavorecidosScreen
 import com.example.financeapp.ui.screens.transferencia.TransferenciaEnviarScreen
 import com.example.financeapp.ui.screens.transferencia.TransferenciaHubScreen
+import com.example.financeapp.data.auth.TokenManager
 import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val verificarSessao: VerificarSessaoUseCase = koinInject()
+    val tokenManager: TokenManager = koinInject()
     val estaLogado by verificarSessao().collectAsState(initial = false)
+
+    // Verificar e limpar sessão expirada ao abrir o app
+    LaunchedEffect(Unit) {
+        tokenManager.verificarELimparSessaoExpirada()
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Rotas.Login.rota
+        startDestination = Rotas.Splash.rota
     ) {
+        composable(Rotas.Splash.rota) {
+            SplashScreen(
+                aoNavegar = {
+                    navController.navigate(Rotas.Login.rota) {
+                        popUpTo(Rotas.Splash.rota) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Rotas.Login.rota) {
             LaunchedEffect(estaLogado) {
                 if (estaLogado) {

@@ -2,6 +2,7 @@ package com.example.financeapp.ui.navigation
 
 // Rotas de navegação do aplicativo
 sealed class Rotas(val rota: String) {
+    data object Splash : Rotas("splash")
     data object Login : Rotas("login")
     data object Registro : Rotas("registro")
     data object Home : Rotas("home")

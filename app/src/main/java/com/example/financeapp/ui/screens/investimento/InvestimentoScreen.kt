@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financeapp.data.remote.dto.InvestmentCreateDto
 import com.example.financeapp.data.remote.dto.InvestmentDto
+import com.example.financeapp.data.remote.dto.StockQuoteDto
 import com.example.financeapp.domain.repository.FinanceRepository
 import com.example.financeapp.ui.components.GradientButton
 import com.example.financeapp.ui.theme.*
@@ -44,6 +45,9 @@ data class InvestimentoUiState(
     val totalInvestido: Double = 0.0, val totalAtual: Double = 0.0,
     val lucro: Double = 0.0, val lucroPct: Double = 0.0,
     val investimentos: List<InvestmentDto> = emptyList(),
+    val acoes: List<StockQuoteDto> = emptyList(),
+    val ibovespa: Double = 0.0, val ibovespaChange: Double = 0.0,
+    val abaAtual: Int = 0,
     val mensagem: String? = null
 )
 
@@ -60,7 +64,17 @@ class InvestimentoViewModel(private val repo: FinanceRepository) : ViewModel() {
             try {
                 val dash = repo.obterInvestmentDashboard()
                 val list = repo.listarInvestimentos()
-                _estado.update { it.copy(carregando = false, totalInvestido = dash.totalInvested, totalAtual = dash.totalCurrentValue, lucro = dash.totalProfit, lucroPct = dash.profitPercentage, investimentos = list.investments) }
+                val stocks = try { repo.obterAcoes() } catch (_: Exception) { null }
+                _estado.update {
+                    it.copy(
+                        carregando = false, totalInvestido = dash.totalInvested,
+                        totalAtual = dash.totalCurrentValue, lucro = dash.totalProfit,
+                        lucroPct = dash.profitPercentage, investimentos = list.investments,
+                        acoes = stocks?.stocks ?: emptyList(),
+                        ibovespa = stocks?.ibovespa ?: 0.0,
+                        ibovespaChange = stocks?.ibovespaChange ?: 0.0
+                    )
+                }
             } catch (e: Exception) { _estado.update { it.copy(carregando = false, mensagem = "Erro ao carregar") } }
         }
     }
@@ -89,6 +103,8 @@ class InvestimentoViewModel(private val repo: FinanceRepository) : ViewModel() {
     }
 
     fun limparMsg() { _estado.update { it.copy(mensagem = null) } }
+
+    fun mudarAba(aba: Int) { _estado.update { it.copy(abaAtual = aba) } }
 }
 
 // ── Screen ─────────────────────────────────────────────
@@ -113,26 +129,57 @@ fun InvestimentoScreen(aoVoltar: () -> Unit, viewModel: InvestimentoViewModel = 
                 item { Spacer(Modifier.height(8.dp)) }
                 // Dashboard card
                 item { InvestmentDashboardCard(estado, fmt) }
-                // Investimentos ativos
+
+                // Tabs: Investimentos / Bolsa
                 item {
-                    if (estado.investimentos.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        Text("Seus investimentos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = estado.abaAtual == 0, onClick = { viewModel.mudarAba(0) }, label = { Text("Meus Investimentos") })
+                        FilterChip(selected = estado.abaAtual == 1, onClick = { viewModel.mudarAba(1) }, label = { Text("Bolsa de Valores") })
                     }
                 }
-                items(estado.investimentos.filter { it.status == "ACTIVE" }, key = { it.id }) { inv ->
-                    InvestimentoItem(inv, fmt) { viewModel.resgatar(inv.id) }
-                }
-                if (estado.investimentos.isEmpty()) {
-                    item {
-                        Box(Modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Savings, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-                                Spacer(Modifier.height(16.dp))
-                                Text("Comece a investir", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("Toque em + para aplicar", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+
+                if (estado.abaAtual == 0) {
+                    // Investimentos ativos
+                    items(estado.investimentos.filter { it.status == "ACTIVE" }, key = { it.id }) { inv ->
+                        InvestimentoItem(inv, fmt) { viewModel.resgatar(inv.id) }
+                    }
+                    if (estado.investimentos.isEmpty()) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Savings, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                                    Spacer(Modifier.height(16.dp))
+                                    Text("Comece a investir", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Toque em + para aplicar", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                                }
                             }
                         }
+                    }
+                } else {
+                    // Bolsa de Valores
+                    item {
+                        // Ibovespa card
+                        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.medium) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("IBOVESPA", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text("Índice Bovespa", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(String.format("%,.0f", estado.ibovespa), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        (if (estado.ibovespaChange >= 0) "+" else "") + String.format("%.2f%%", estado.ibovespaChange),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (estado.ibovespaChange >= 0) IFIncome else IFExpense
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    items(estado.acoes, key = { it.symbol }) { acao ->
+                        StockItem(acao)
                     }
                 }
                 item { Spacer(Modifier.height(80.dp)) }
@@ -230,6 +277,49 @@ private fun InvestirSheet(salvando: Boolean, onDismiss: () -> Unit, onSave: (Str
             if (salvando) { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp)) } }
             else { GradientButton("Investir", onClick = { val v = valor.replace(",", ".").toDoubleOrNull(); if (v != null && v > 0) onSave(nomes[tipo] ?: tipo, tipo, v) }, enabled = (valor.replace(",", ".").toDoubleOrNull() ?: 0.0) > 0) }
             Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun StockItem(acao: StockQuoteDto) {
+    val isPositive = acao.change >= 0
+    val changeColor = if (isPositive) IFIncome else IFExpense
+
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(1.dp)
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(changeColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    acao.symbol.take(2),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = changeColor
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(acao.symbol, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(acao.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${acao.sector} • Vol: ${acao.volume}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("R$ ${String.format("%.2f", acao.price)}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(
+                    (if (isPositive) "+" else "") + String.format("%.2f", acao.change) + " (" + String.format("%.2f%%", acao.changePercent) + ")",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = changeColor
+                )
+                Text(acao.marketCap, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+            }
         }
     }
 }

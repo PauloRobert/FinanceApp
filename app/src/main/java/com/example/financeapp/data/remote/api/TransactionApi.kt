@@ -15,6 +15,7 @@ import com.example.financeapp.data.remote.dto.InvestmentDto
 import com.example.financeapp.data.remote.dto.InvestmentListDto
 import com.example.financeapp.data.remote.dto.LoginRequest
 import com.example.financeapp.data.remote.dto.MessageResponse
+import com.example.financeapp.data.remote.dto.StockListDto
 import com.example.financeapp.data.remote.dto.PaymentDto
 import com.example.financeapp.data.remote.dto.PaymentListDto
 import com.example.financeapp.data.remote.dto.PaymentRequestDto
@@ -180,5 +181,9 @@ interface TransactionApi {
     suspend fun criarInvestimento(@Body dados: InvestmentCreateDto): InvestmentDto
     @POST("investments/{id}/redeem")
     suspend fun resgatarInvestimento(@Path("id") id: String): InvestmentDto
+
+    // ── Stocks ──────────────────────────────────────────
+    @GET("stocks/")
+    suspend fun obterAcoes(): StockListDto
 }
 

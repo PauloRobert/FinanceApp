@@ -24,3 +24,7 @@ data class InvestmentDto(val id: String = "", val name: String = "", @Serialized
 data class InvestmentCreateDto(val name: String, @SerializedName("investment_type") val investmentType: String, val amount: Double, @SerializedName("maturity_date") val maturityDate: String? = null)
 data class InvestmentListDto(val investments: List<InvestmentDto> = emptyList(), val total: Int = 0)
 data class InvestmentDashboardDto(@SerializedName("total_invested") val totalInvested: Double = 0.0, @SerializedName("total_current_value") val totalCurrentValue: Double = 0.0, @SerializedName("total_profit") val totalProfit: Double = 0.0, @SerializedName("profit_percentage") val profitPercentage: Double = 0.0, @SerializedName("investments_count") val investmentsCount: Int = 0)
+
+// ── Stocks ─────────────────────────────────────────────
+data class StockQuoteDto(val symbol: String = "", val name: String = "", val price: Double = 0.0, val change: Double = 0.0, @SerializedName("change_percent") val changePercent: Double = 0.0, val volume: String = "", @SerializedName("market_cap") val marketCap: String = "", val sector: String = "")
+data class StockListDto(val stocks: List<StockQuoteDto> = emptyList(), val ibovespa: Double = 0.0, @SerializedName("ibovespa_change") val ibovespaChange: Double = 0.0)

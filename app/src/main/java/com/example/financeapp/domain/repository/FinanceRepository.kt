@@ -20,4 +20,6 @@ interface FinanceRepository {
     suspend fun listarInvestimentos(): InvestmentListDto
     suspend fun criarInvestimento(dados: InvestmentCreateDto): InvestmentDto
     suspend fun resgatarInvestimento(id: String): InvestmentDto
+    // Stocks
+    suspend fun obterAcoes(): StockListDto
 }

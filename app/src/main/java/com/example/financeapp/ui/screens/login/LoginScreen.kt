@@ -1,5 +1,13 @@
 package com.example.financeapp.ui.screens.login
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -52,8 +62,13 @@ import androidx.compose.ui.unit.dp
 import com.example.financeapp.ui.components.GradientButton
 import com.example.financeapp.ui.components.IFBankLogo
 import com.example.financeapp.ui.components.LogoSize
-import com.example.financeapp.ui.theme.IFGradientSubtle
+import com.example.financeapp.ui.theme.IFBlue
+import com.example.financeapp.ui.theme.IFBlueDark
+import com.example.financeapp.ui.theme.IFLilac
+import com.example.financeapp.ui.theme.IFLilacLight
+import com.example.financeapp.ui.theme.IFPurple
 import org.koin.androidx.compose.koinViewModel
+import kotlin.math.sin
 
 @Composable
 fun LoginScreen(
@@ -81,20 +96,15 @@ fun LoginScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Gradient accent at top
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp)
-                    .background(IFGradientSubtle)
-            )
+            // Animated financial waves background
+            FinancialWavesBackground()
 
             Column(
                 modifier = Modifier
@@ -109,7 +119,7 @@ fun LoginScreen(
                 // Logo IF Bank
                 IFBankLogo(
                     size = LogoSize.Large,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -117,7 +127,7 @@ fun LoginScreen(
                 Text(
                     text = "Seu banco digital inteligente",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
 
@@ -127,13 +137,13 @@ fun LoginScreen(
                     text = "Bem-vindo de volta",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Color.White
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Faça login para acessar sua conta",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White.copy(alpha = 0.7f)
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -240,18 +250,105 @@ fun LoginScreen(
                     Text(
                         text = "Não tem conta? ",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                     Text(
                         text = "Cadastre-se",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = IFLilacLight
                     )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun FinancialWavesBackground() {
+    val infiniteTransition = rememberInfiniteTransition(label = "waves")
+    val phase1 by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
+        label = "wave1"
+    )
+    val phase2 by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Restart),
+        label = "wave2"
+    )
+    val phase3 by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
+        label = "wave3"
+    )
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+
+        // Background gradient
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(IFBlueDark, Color(0xFF1E1B4B), Color(0xFF0F172A))
+            )
+        )
+
+        // Wave 1 — large slow wave (blue)
+        val path1 = androidx.compose.ui.graphics.Path()
+        path1.moveTo(0f, h * 0.35f)
+        for (x in 0..w.toInt() step 4) {
+            val xf = x.toFloat()
+            val y = h * 0.35f + sin((xf / w * 4 + phase1 * Math.PI / 180).toFloat()) * 40f
+            path1.lineTo(xf, y)
+        }
+        path1.lineTo(w, h)
+        path1.lineTo(0f, h)
+        path1.close()
+        drawPath(path1, IFBlue.copy(alpha = 0.08f))
+
+        // Wave 2 — medium wave (purple)
+        val path2 = androidx.compose.ui.graphics.Path()
+        path2.moveTo(0f, h * 0.5f)
+        for (x in 0..w.toInt() step 4) {
+            val xf = x.toFloat()
+            val y = h * 0.5f + sin((xf / w * 6 + phase2 * Math.PI / 180).toFloat()) * 30f
+            path2.lineTo(xf, y)
+        }
+        path2.lineTo(w, h)
+        path2.lineTo(0f, h)
+        path2.close()
+        drawPath(path2, IFPurple.copy(alpha = 0.06f))
+
+        // Wave 3 — small fast wave (lilac)
+        val path3 = androidx.compose.ui.graphics.Path()
+        path3.moveTo(0f, h * 0.65f)
+        for (x in 0..w.toInt() step 4) {
+            val xf = x.toFloat()
+            val y = h * 0.65f + sin((xf / w * 8 + phase3 * Math.PI / 180).toFloat()) * 20f
+            path3.lineTo(xf, y)
+        }
+        path3.lineTo(w, h)
+        path3.lineTo(0f, h)
+        path3.close()
+        drawPath(path3, IFLilac.copy(alpha = 0.05f))
+
+        // Floating particles — simulating financial data points
+        for (i in 0..15) {
+            val px = (w * ((i * 0.0618f + phase1 / 360f) % 1f))
+            val py = h * ((i * 0.0732f + phase2 / 720f) % 0.4f) + h * 0.05f
+            val radius = 2f + (i % 3) * 1.5f
+            drawCircle(
+                color = when (i % 3) {
+                    0 -> IFBlue.copy(alpha = 0.3f)
+                    1 -> IFPurple.copy(alpha = 0.25f)
+                    else -> IFLilacLight.copy(alpha = 0.2f)
+                },
+                radius = radius,
+                center = Offset(px, py)
+            )
         }
     }
 }

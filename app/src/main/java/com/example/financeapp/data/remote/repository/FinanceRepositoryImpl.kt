@@ -31,4 +31,5 @@ class FinanceRepositoryImpl(
     override suspend fun listarInvestimentos(): InvestmentListDto { auth(); return api.listarInvestimentos() }
     override suspend fun criarInvestimento(dados: InvestmentCreateDto): InvestmentDto { auth(); return api.criarInvestimento(dados) }
     override suspend fun resgatarInvestimento(id: String): InvestmentDto { auth(); return api.resgatarInvestimento(id) }
+    override suspend fun obterAcoes(): StockListDto { auth(); return api.obterAcoes() }
 }
