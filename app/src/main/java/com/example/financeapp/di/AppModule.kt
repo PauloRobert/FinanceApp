@@ -5,9 +5,13 @@ import com.example.financeapp.data.auth.TokenManager
 import com.example.financeapp.data.remote.api.AuthInterceptor
 import com.example.financeapp.data.remote.api.TransactionApi
 import com.example.financeapp.data.remote.repository.TransactionRepositoryRemoteImpl
+import com.example.financeapp.data.remote.repository.PixRepositoryImpl
+import com.example.financeapp.data.remote.repository.TransferRepositoryImpl
 import com.example.financeapp.data.remote.repository.UserRepositoryImpl
 import com.example.financeapp.domain.repository.AuthRepository
+import com.example.financeapp.domain.repository.PixRepository
 import com.example.financeapp.domain.repository.TransactionRepository
+import com.example.financeapp.domain.repository.TransferRepository
 import com.example.financeapp.domain.repository.UserRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
 import com.example.financeapp.domain.usecase.GetTransactionsUseCase
@@ -21,9 +25,17 @@ import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesViewModel
 import com.example.financeapp.ui.screens.home.HomeViewModel
 import com.example.financeapp.ui.screens.login.LoginViewModel
 import com.example.financeapp.ui.screens.perfil.PerfilViewModel
+import com.example.financeapp.ui.screens.pix.MinhasChavesViewModel
+import com.example.financeapp.ui.screens.pix.PixEnviarViewModel
+import com.example.financeapp.ui.screens.pix.PixHistoricoViewModel
+import com.example.financeapp.ui.screens.pix.PixHubViewModel
+import com.example.financeapp.ui.screens.pix.PixReceberViewModel
 import com.example.financeapp.ui.screens.privacidade.PrivacidadeViewModel
 import com.example.financeapp.ui.screens.registro.RegistroViewModel
 import com.example.financeapp.ui.screens.seguranca.SegurancaViewModel
+import com.example.financeapp.ui.screens.transferencia.FavorecidosViewModel
+import com.example.financeapp.ui.screens.transferencia.TransferenciaEnviarViewModel
+import com.example.financeapp.ui.screens.transferencia.TransferenciaHubViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -67,6 +79,12 @@ val appModule = module {
     // === Repositório de Usuário ===
     single<UserRepository> { UserRepositoryImpl(get(), get(), get()) }
 
+    // === Repositório Pix ===
+    single<PixRepository> { PixRepositoryImpl(get(), get(), get()) }
+
+    // === Repositório Transferência ===
+    single<TransferRepository> { TransferRepositoryImpl(get(), get(), get()) }
+
     // === Use Cases de Auth ===
     factory { LoginUseCase(get()) }
     factory { RegistrarUseCase(get()) }
@@ -87,4 +105,12 @@ val appModule = module {
     viewModel { PerfilViewModel(get()) }
     viewModel { SegurancaViewModel(get()) }
     viewModel { PrivacidadeViewModel(get()) }
+    viewModel { PixHubViewModel(get()) }
+    viewModel { PixEnviarViewModel(get()) }
+    viewModel { PixReceberViewModel(get()) }
+    viewModel { MinhasChavesViewModel(get()) }
+    viewModel { PixHistoricoViewModel(get()) }
+    viewModel { TransferenciaHubViewModel(get()) }
+    viewModel { TransferenciaEnviarViewModel(get()) }
+    viewModel { FavorecidosViewModel(get()) }
 }

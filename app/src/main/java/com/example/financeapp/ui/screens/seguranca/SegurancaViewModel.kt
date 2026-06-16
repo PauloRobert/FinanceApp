@@ -141,4 +141,8 @@ class SegurancaViewModel(
     fun limparMensagens() {
         _estado.update { it.copy(mensagemSucesso = null, mensagemErro = null) }
     }
+
+    fun exibirErro(mensagem: String) {
+        _estado.update { it.copy(mensagemErro = mensagem) }
+    }
 }

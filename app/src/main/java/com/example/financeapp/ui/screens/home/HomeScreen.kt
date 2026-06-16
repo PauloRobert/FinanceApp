@@ -55,6 +55,8 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     aoAbrirConfiguracoes: () -> Unit = {},
+    aoAbrirPix: () -> Unit = {},
+    aoAbrirTransferencia: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -185,7 +187,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     // Ações rápidas
-                    QuickActionsRow()
+                    QuickActionsRow(aoAbrirPix = aoAbrirPix, aoAbrirTransferencia = aoAbrirTransferencia)
 
                     Spacer(modifier = Modifier.height(20.dp))
 

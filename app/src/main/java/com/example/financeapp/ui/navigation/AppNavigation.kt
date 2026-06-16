@@ -7,14 +7,24 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesScreen
 import com.example.financeapp.ui.screens.home.HomeScreen
 import com.example.financeapp.ui.screens.login.LoginScreen
 import com.example.financeapp.ui.screens.perfil.PerfilScreen
+import com.example.financeapp.ui.screens.pix.MinhasChavesScreen
+import com.example.financeapp.ui.screens.pix.PixEnviarScreen
+import com.example.financeapp.ui.screens.pix.PixHistoricoScreen
+import com.example.financeapp.ui.screens.pix.PixHubScreen
+import com.example.financeapp.ui.screens.pix.PixReceberScreen
 import com.example.financeapp.ui.screens.privacidade.PrivacidadeScreen
 import com.example.financeapp.ui.screens.registro.RegistroScreen
 import com.example.financeapp.ui.screens.seguranca.SegurancaScreen
+import com.example.financeapp.ui.screens.transferencia.FavorecidosScreen
+import com.example.financeapp.ui.screens.transferencia.TransferenciaEnviarScreen
+import com.example.financeapp.ui.screens.transferencia.TransferenciaHubScreen
 import org.koin.compose.koinInject
 
 @Composable
@@ -57,6 +67,12 @@ fun AppNavigation() {
             HomeScreen(
                 aoAbrirConfiguracoes = {
                     navController.navigate(Rotas.Configuracoes.rota)
+                },
+                aoAbrirPix = {
+                    navController.navigate(Rotas.PixHub.rota)
+                },
+                aoAbrirTransferencia = {
+                    navController.navigate(Rotas.TransferenciaHub.rota)
                 }
             )
         }
@@ -91,6 +107,78 @@ fun AppNavigation() {
         }
         composable(Rotas.Privacidade.rota) {
             PrivacidadeScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.PixHub.rota) {
+            PixHubScreen(
+                aoVoltar = { navController.popBackStack() },
+                aoEnviarPix = { navController.navigate(Rotas.PixEnviar.rota) },
+                aoReceberPix = { navController.navigate(Rotas.PixReceber.rota) },
+                aoMinhasChaves = { navController.navigate(Rotas.PixChaves.rota) },
+                aoExtratoPix = { navController.navigate(Rotas.PixHistorico.rota) },
+                aoEnviarParaFavorito = { chave ->
+                    navController.navigate(Rotas.PixEnviarFavorito.criarRota(chave))
+                }
+            )
+        }
+        composable(Rotas.PixEnviar.rota) {
+            PixEnviarScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(
+            Rotas.PixEnviarFavorito.rota,
+            arguments = listOf(navArgument("chave") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val chave = backStackEntry.arguments?.getString("chave")
+            PixEnviarScreen(
+                aoVoltar = { navController.popBackStack() },
+                chaveInicial = chave
+            )
+        }
+        composable(Rotas.PixReceber.rota) {
+            PixReceberScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.PixChaves.rota) {
+            MinhasChavesScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.PixHistorico.rota) {
+            PixHistoricoScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.TransferenciaHub.rota) {
+            TransferenciaHubScreen(
+                aoVoltar = { navController.popBackStack() },
+                aoTransferir = { navController.navigate(Rotas.TransferenciaEnviar.rota) },
+                aoFavorecidos = { navController.navigate(Rotas.TransferenciaFavorecidos.rota) },
+                aoTransferirParaFavorecido = { favId ->
+                    navController.navigate(Rotas.TransferenciaEnviarFavorecido.criarRota(favId))
+                }
+            )
+        }
+        composable(Rotas.TransferenciaEnviar.rota) {
+            TransferenciaEnviarScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(
+            Rotas.TransferenciaEnviarFavorecido.rota,
+            arguments = listOf(navArgument("favId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val favId = backStackEntry.arguments?.getString("favId")
+            TransferenciaEnviarScreen(
+                aoVoltar = { navController.popBackStack() },
+                favorecidoId = favId
+            )
+        }
+        composable(Rotas.TransferenciaFavorecidos.rota) {
+            FavorecidosScreen(
                 aoVoltar = { navController.popBackStack() }
             )
         }

@@ -1,5 +1,7 @@
 package com.example.financeapp.ui.screens.seguranca
 
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,10 +56,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.financeapp.ui.components.GradientButton
 import org.koin.androidx.compose.koinViewModel
 
@@ -69,6 +74,8 @@ fun SegurancaScreen(
 ) {
     val estado by viewModel.estado.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val activity = context as? FragmentActivity
 
     LaunchedEffect(estado.mensagemSucesso, estado.mensagemErro) {
         estado.mensagemSucesso?.let {
@@ -205,7 +212,58 @@ fun SegurancaScreen(
                             titulo = "Biometria",
                             subtitulo = "Usar digital ou reconhecimento facial",
                             checked = estado.biometricEnabled,
-                            onCheckedChange = viewModel::alternarBiometria
+                            onCheckedChange = { ativar ->
+                                if (ativar && activity != null) {
+                                    val biometricManager = BiometricManager.from(context)
+                                    val canAuth = biometricManager.canAuthenticate(
+                                        BiometricManager.Authenticators.BIOMETRIC_STRONG
+                                                or BiometricManager.Authenticators.BIOMETRIC_WEAK
+                                    )
+                                    if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
+                                        viewModel.exibirErro("Biometria não disponível neste dispositivo")
+                                        return@SecurityToggleItem
+                                    }
+
+                                    val executor = ContextCompat.getMainExecutor(context)
+                                    val callback = object : BiometricPrompt.AuthenticationCallback() {
+                                        override fun onAuthenticationSucceeded(
+                                            result: BiometricPrompt.AuthenticationResult
+                                        ) {
+                                            viewModel.alternarBiometria(true)
+                                        }
+
+                                        override fun onAuthenticationError(
+                                            errorCode: Int,
+                                            errString: CharSequence
+                                        ) {
+                                            if (errorCode != BiometricPrompt.ERROR_USER_CANCELED
+                                                && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
+                                            ) {
+                                                viewModel.exibirErro("Erro: $errString")
+                                            }
+                                        }
+
+                                        override fun onAuthenticationFailed() {
+                                            viewModel.exibirErro("Biometria não reconhecida")
+                                        }
+                                    }
+
+                                    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                                        .setTitle("IF Bank")
+                                        .setSubtitle("Confirme sua identidade para ativar a biometria")
+                                        .setNegativeButtonText("Cancelar")
+                                        .setAllowedAuthenticators(
+                                            BiometricManager.Authenticators.BIOMETRIC_STRONG
+                                                    or BiometricManager.Authenticators.BIOMETRIC_WEAK
+                                        )
+                                        .build()
+
+                                    BiometricPrompt(activity, executor, callback)
+                                        .authenticate(promptInfo)
+                                } else {
+                                    viewModel.alternarBiometria(false)
+                                }
+                            }
                         )
                     }
                 }

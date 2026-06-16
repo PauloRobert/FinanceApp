@@ -65,6 +65,8 @@ dependencies {
     implementation(libs.datastore.preferences)
     // Navigation
     implementation(libs.navigation.compose)
+    // Biometric
+    implementation(libs.biometric)
 
     coreLibraryDesugaring(libs.android.desugar)
     testImplementation(libs.junit)

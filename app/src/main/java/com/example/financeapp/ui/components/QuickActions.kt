@@ -37,11 +37,13 @@ data class QuickAction(
 
 @Composable
 fun QuickActionsRow(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    aoAbrirPix: () -> Unit = {},
+    aoAbrirTransferencia: () -> Unit = {}
 ) {
     val actions = listOf(
-        QuickAction("Pix", Icons.Default.Pix),
-        QuickAction("Transferir", Icons.Default.SwapHoriz),
+        QuickAction("Pix", Icons.Default.Pix, aoAbrirPix),
+        QuickAction("Transferir", Icons.Default.SwapHoriz, aoAbrirTransferencia),
         QuickAction("Depositar", Icons.Default.AccountBalance),
         QuickAction("Pagar", Icons.Default.Receipt),
         QuickAction("Cartões", Icons.Default.CreditCard),
