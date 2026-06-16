@@ -1,6 +1,8 @@
 package com.example.financeapp.di
 
 import androidx.room.Room
+import com.example.financeapp.data.auth.AuthRepositoryImpl
+import com.example.financeapp.data.auth.TokenManager
 import com.example.financeapp.data.config.DataSourceConfigRepositoryImpl
 import com.example.financeapp.data.connectivity.ConnectivityObserver
 import com.example.financeapp.data.firebase.datasource.FirestoreDataSource
@@ -12,14 +14,21 @@ import com.example.financeapp.data.repository.TransactionRepositoryFirebaseImpl
 import com.example.financeapp.data.room.database.AppDatabase
 import com.example.financeapp.data.room.repository.TransactionRepositoryRoomImpl
 import com.example.financeapp.data.sync.SyncManager
+import com.example.financeapp.domain.repository.AuthRepository
 import com.example.financeapp.domain.repository.DataSourceConfigRepository
 import com.example.financeapp.domain.repository.TransactionRepository
 import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
 import com.example.financeapp.domain.usecase.GetTransactionsUseCase
 import com.example.financeapp.domain.usecase.InsertTransactionsUseCase
+import com.example.financeapp.domain.usecase.LoginUseCase
+import com.example.financeapp.domain.usecase.LogoutUseCase
+import com.example.financeapp.domain.usecase.RegistrarUseCase
 import com.example.financeapp.domain.usecase.UpdateTransactionUseCase
+import com.example.financeapp.domain.usecase.VerificarSessaoUseCase
 import com.example.financeapp.ui.screens.configuracoes.ConfiguracoesViewModel
 import com.example.financeapp.ui.screens.home.HomeViewModel
+import com.example.financeapp.ui.screens.login.LoginViewModel
+import com.example.financeapp.ui.screens.registro.RegistroViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -65,6 +74,9 @@ val appModule = module {
         OkHttpClient.Builder()
             .addInterceptor(get<AuthInterceptor>())
             .addInterceptor(logging)
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
     single {
@@ -76,8 +88,18 @@ val appModule = module {
     }
     single { get<Retrofit>().create(TransactionApi::class.java) }
     single<TransactionRepository>(named("remote")) {
-        TransactionRepositoryRemoteImpl(get(), get())
+        TransactionRepositoryRemoteImpl(get(), get(), get())
     }
+
+    // === Autenticação ===
+    single { TokenManager(androidContext()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
+
+    // === Use Cases de Auth ===
+    factory { LoginUseCase(get()) }
+    factory { RegistrarUseCase(get()) }
+    factory { LogoutUseCase(get()) }
+    factory { VerificarSessaoUseCase(get()) }
 
     // === Sync (infraestrutura interna) ===
     single { ConnectivityObserver(androidContext()) }
@@ -109,6 +131,8 @@ val appModule = module {
     factory { DeleteTransactionUseCase(get<RepositoryProvider>().obterRepositorioAtivo()) }
 
     // === ViewModels ===
-    viewModel { HomeViewModel(get()) }
-    viewModel { ConfiguracoesViewModel(get()) }
+    viewModel { HomeViewModel(get(), get()) }
+    viewModel { ConfiguracoesViewModel(get(), get()) }
+    viewModel { LoginViewModel(get()) }
+    viewModel { RegistroViewModel(get()) }
 }
