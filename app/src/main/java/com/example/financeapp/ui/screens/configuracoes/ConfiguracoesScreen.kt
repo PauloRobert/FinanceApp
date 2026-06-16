@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +40,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ConfiguracoesScreen(
     aoVoltar: () -> Unit,
+    aoLogout: () -> Unit = {},
     viewModel: ConfiguracoesViewModel = koinViewModel()
 ) {
     val origemAtual by viewModel.origemSelecionada.collectAsState()
@@ -133,6 +137,24 @@ fun ConfiguracoesScreen(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Botão de logout
+            Button(
+                onClick = { viewModel.logout { aoLogout() } },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("Sair da Conta")
             }
         }
     }
