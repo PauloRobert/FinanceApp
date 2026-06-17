@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -68,6 +69,7 @@ fun HomeScreen(
     aoAbrirCartoes: () -> Unit = {},
     aoAbrirInvestimento: () -> Unit = {},
     aoExportarExtrato: () -> Unit = {},
+    aoAbrirRelatorios: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -238,6 +240,19 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = aoAbrirRelatorios) {
+                                Icon(
+                                    Icons.Default.Analytics,
+                                    contentDescription = "Relatórios",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    " Relatórios",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                             TextButton(onClick = aoExportarExtrato) {
                                 Icon(
                                     Icons.Default.FileDownload,
@@ -246,7 +261,7 @@ fun HomeScreen(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    " Exportar",
+                                    " Extrato",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )

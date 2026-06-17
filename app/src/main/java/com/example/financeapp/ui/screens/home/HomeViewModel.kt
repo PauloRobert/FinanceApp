@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -24,17 +23,15 @@ class HomeViewModel(
     val estado: StateFlow<HomeUiState> = _estado.asStateFlow()
 
     init {
-        observarTransacoes()
+        carregarTransacoes()
         observarNomeUsuario()
     }
 
-    // Observa transações da API REST
-    private fun observarTransacoes() {
+    // Carrega transações da API REST
+    fun carregarTransacoes() {
         viewModelScope.launch {
+            _estado.value = _estado.value.copy(carregando = true)
             repositorio.obterTransacoes()
-                .onStart {
-                    _estado.value = _estado.value.copy(carregando = true)
-                }
                 .catch { erro ->
                     _estado.value = _estado.value.copy(
                         carregando = false,
@@ -74,6 +71,7 @@ class HomeViewModel(
                     type = if (ehEntrada) TransactionType.INCOME else TransactionType.EXPENSE
                 )
                 repositorio.inserirTransacao(transacao)
+                carregarTransacoes()
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao adicionar transação: ${e.message}"
@@ -86,6 +84,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 repositorio.atualizarTransacao(transacao)
+                carregarTransacoes()
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao atualizar transação: ${e.message}"
@@ -98,6 +97,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 repositorio.deletarTransacao(transacao.id)
+                carregarTransacoes()
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
                     mensagemErro = "Erro ao excluir transação: ${e.message}"

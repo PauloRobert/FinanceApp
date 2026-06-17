@@ -18,6 +18,7 @@ import com.example.financeapp.ui.screens.home.HomeScreen
 import com.example.financeapp.ui.screens.investimento.InvestimentoScreen
 import com.example.financeapp.ui.screens.login.LoginScreen
 import com.example.financeapp.ui.screens.pagamento.PagamentoScreen
+import com.example.financeapp.ui.screens.relatorios.RelatorioScreen
 import com.example.financeapp.ui.screens.perfil.PerfilScreen
 import com.example.financeapp.ui.screens.pix.MinhasChavesScreen
 import com.example.financeapp.ui.screens.pix.PixEnviarScreen
@@ -94,7 +95,8 @@ fun AppNavigation() {
                 aoAbrirPagamento = { navController.navigate(Rotas.Pagamento.rota) },
                 aoAbrirCartoes = { navController.navigate(Rotas.Cartoes.rota) },
                 aoAbrirInvestimento = { navController.navigate(Rotas.Investimento.rota) },
-                aoExportarExtrato = { navController.navigate(Rotas.Extrato.rota) }
+                aoExportarExtrato = { navController.navigate(Rotas.Extrato.rota) },
+                aoAbrirRelatorios = { navController.navigate(Rotas.Relatorios.rota) }
             )
         }
         composable(Rotas.Configuracoes.rota) {
@@ -228,6 +230,11 @@ fun AppNavigation() {
         }
         composable(Rotas.Extrato.rota) {
             ExtratoScreen(
+                aoVoltar = { navController.popBackStack() }
+            )
+        }
+        composable(Rotas.Relatorios.rota) {
+            RelatorioScreen(
                 aoVoltar = { navController.popBackStack() }
             )
         }

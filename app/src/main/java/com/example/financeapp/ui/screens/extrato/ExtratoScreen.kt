@@ -3,6 +3,8 @@ package com.example.financeapp.ui.screens.extrato
 import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import androidx.compose.foundation.background
@@ -98,64 +100,143 @@ class ExtratoViewModel(
             try {
                 val transacoes = getTransacoesFiltradas()
                 val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                val currencyFmt = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
                 val doc = PdfDocument()
-                val pageWidth = 595
-                val pageHeight = 842
-                var pageNumber = 1
-                var yPos = 80f
+                val pw = 595
+                val ph = 842
+                var pageNum = 1
+                val marginL = 40f
+                val marginR = pw - 40f
+                val contentW = marginR - marginL
+
+                // Cores
+                val azulPrimario = android.graphics.Color.rgb(37, 99, 235)
+                val azulEscuro = android.graphics.Color.rgb(30, 58, 138)
+                val roxo = android.graphics.Color.rgb(124, 58, 237)
+                val cinzaClaro = android.graphics.Color.rgb(241, 245, 249)
+                val cinzaBorda = android.graphics.Color.rgb(203, 213, 225)
+                val textoEscuro = android.graphics.Color.rgb(30, 41, 59)
+                val textoMedio = android.graphics.Color.rgb(100, 116, 139)
+                val verde = android.graphics.Color.rgb(16, 185, 129)
+                val vermelho = android.graphics.Color.rgb(239, 68, 68)
+
+                // Paints
+                val pBrand = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 24f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = android.graphics.Color.WHITE }
+                val pBrandSub = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 10f; color = android.graphics.Color.argb(180, 255, 255, 255) }
+                val pTitle = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 16f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = textoEscuro }
+                val pSubtitle = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; color = textoMedio }
+                val pHeader = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = android.graphics.Color.WHITE }
+                val pBody = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; color = textoEscuro }
+                val pBodyBold = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = textoEscuro }
+                val pIncome = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = verde }
+                val pExpense = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = vermelho }
+                val pSummaryLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 10f; color = textoMedio }
+                val pSummaryValue = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 14f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); color = textoEscuro }
+                val pLine = Paint().apply { color = cinzaBorda; strokeWidth = 0.5f }
+                val pBg = Paint().apply { color = cinzaClaro }
+                val pHeaderBg = Paint().apply { color = azulPrimario }
+                val pFooter = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 7f; color = textoMedio; textAlign = Paint.Align.CENTER }
+
+                // Cálculos
+                val totalEntradas = transacoes.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+                val totalSaidas = transacoes.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                val saldo = totalEntradas - totalSaidas
 
                 fun newPage(): PdfDocument.Page {
-                    val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber++).create()
-                    return doc.startPage(pageInfo)
+                    val info = PdfDocument.PageInfo.Builder(pw, ph, pageNum++).create()
+                    return doc.startPage(info)
                 }
 
                 var page = newPage()
                 var canvas = page.canvas
+                var y = 0f
 
-                val titlePaint = Paint().apply { textSize = 22f; isFakeBoldText = true; color = android.graphics.Color.rgb(37, 99, 235) }
-                val subtitlePaint = Paint().apply { textSize = 12f; color = android.graphics.Color.rgb(100, 116, 139) }
-                val headerPaint = Paint().apply { textSize = 11f; isFakeBoldText = true; color = android.graphics.Color.rgb(30, 41, 59) }
-                val bodyPaint = Paint().apply { textSize = 10f; color = android.graphics.Color.rgb(30, 41, 59) }
-                val incomePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = android.graphics.Color.rgb(16, 185, 129) }
-                val expensePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = android.graphics.Color.rgb(239, 68, 68) }
-                val linePaint = Paint().apply { color = android.graphics.Color.rgb(203, 213, 225); strokeWidth = 0.5f }
+                // ═══ HEADER BANNER ═══
+                val headerPaint = Paint().apply {
+                    shader = android.graphics.LinearGradient(0f, 0f, pw.toFloat(), 80f, azulEscuro, roxo, android.graphics.Shader.TileMode.CLAMP)
+                }
+                canvas.drawRect(0f, 0f, pw.toFloat(), 80f, headerPaint)
+                canvas.drawText("IF Bank", marginL, 35f, pBrand)
+                canvas.drawText("Extrato Bancário", marginL, 55f, pBrandSub)
+                canvas.drawText("Gerado em ${java.time.LocalDateTime.now().format(formatter)}", marginL, 70f, pBrandSub)
 
-                // Header
-                canvas.drawText("IF Bank", 40f, 50f, titlePaint)
-                canvas.drawText("Extrato Bancário", 40f, 70f, subtitlePaint)
-                canvas.drawText("Gerado em: ${java.time.LocalDateTime.now().format(formatter)}", 300f, 50f, subtitlePaint)
+                // Data no canto direito
+                val pDateRight = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; color = android.graphics.Color.argb(200, 255, 255, 255); textAlign = Paint.Align.RIGHT }
+                canvas.drawText("Documento confidencial", marginR, 35f, pDateRight)
+                canvas.drawText("IF Bank S.A. - CNPJ: 00.000.000/0001-00", marginR, 50f, pDateRight)
 
-                yPos = 100f
-                canvas.drawLine(40f, yPos, (pageWidth - 40).toFloat(), yPos, linePaint)
-                yPos += 20f
+                y = 100f
 
-                // Column headers
-                canvas.drawText("Data", 40f, yPos, headerPaint)
-                canvas.drawText("Descrição", 160f, yPos, headerPaint)
-                canvas.drawText("Tipo", 380f, yPos, headerPaint)
-                canvas.drawText("Valor", 450f, yPos, headerPaint)
-                yPos += 5f
-                canvas.drawLine(40f, yPos, (pageWidth - 40).toFloat(), yPos, linePaint)
-                yPos += 15f
+                // ═══ RESUMO CARDS ═══
+                val cardW = contentW / 3 - 6f
+                // Entradas
+                canvas.drawRect(marginL, y, marginL + cardW, y + 50f, pBg)
+                canvas.drawText("Entradas", marginL + 8f, y + 15f, pSummaryLabel)
+                pSummaryValue.color = verde
+                canvas.drawText(currencyFmt.format(totalEntradas), marginL + 8f, y + 38f, pSummaryValue)
 
+                // Saídas
+                val card2X = marginL + cardW + 8f
+                canvas.drawRect(card2X, y, card2X + cardW, y + 50f, pBg)
+                canvas.drawText("Saídas", card2X + 8f, y + 15f, pSummaryLabel)
+                pSummaryValue.color = vermelho
+                canvas.drawText(currencyFmt.format(totalSaidas), card2X + 8f, y + 38f, pSummaryValue)
+
+                // Saldo
+                val card3X = card2X + cardW + 8f
+                canvas.drawRect(card3X, y, card3X + cardW, y + 50f, pBg)
+                canvas.drawText("Saldo", card3X + 8f, y + 15f, pSummaryLabel)
+                pSummaryValue.color = if (saldo >= java.math.BigDecimal.ZERO) verde else vermelho
+                canvas.drawText(currencyFmt.format(saldo), card3X + 8f, y + 38f, pSummaryValue)
+
+                y += 65f
+
+                // ═══ TÍTULO SEÇÃO ═══
+                canvas.drawText("Movimentações (${transacoes.size})", marginL, y, pTitle)
+                y += 20f
+
+                // ═══ TABLE HEADER ═══
+                canvas.drawRect(marginL, y - 12f, marginR, y + 6f, pHeaderBg)
+                canvas.drawText("DATA", marginL + 6f, y, pHeader)
+                canvas.drawText("DESCRIÇÃO", marginL + 110f, y, pHeader)
+                canvas.drawText("TIPO", marginL + 340f, y, pHeader)
+                canvas.drawText("VALOR", marginL + 420f, y, pHeader)
+                y += 16f
+
+                // ═══ TABLE ROWS ═══
+                var isAlt = false
                 for (tx in transacoes) {
-                    if (yPos > pageHeight - 60) {
+                    if (y > ph - 50f) {
+                        // Footer na página atual
+                        canvas.drawLine(marginL, ph - 35f, marginR, ph - 35f, pLine)
+                        canvas.drawText("IF Bank — Extrato Bancário — Página ${pageNum - 1}", pw / 2f, ph - 20f, pFooter)
                         doc.finishPage(page)
                         page = newPage()
                         canvas = page.canvas
-                        yPos = 50f
+                        y = 40f
+                        isAlt = false
                     }
+
+                    // Fundo alternado
+                    if (isAlt) canvas.drawRect(marginL, y - 11f, marginR, y + 5f, pBg)
+                    isAlt = !isAlt
+
                     val tipo = if (tx.type == TransactionType.INCOME) "Entrada" else "Saída"
-                    val paint = if (tx.type == TransactionType.INCOME) incomePaint else expensePaint
+                    val paint = if (tx.type == TransactionType.INCOME) pIncome else pExpense
                     val prefix = if (tx.type == TransactionType.INCOME) "+ " else "- "
 
-                    canvas.drawText(tx.date.format(formatter), 40f, yPos, bodyPaint)
-                    canvas.drawText(tx.description.take(30), 160f, yPos, bodyPaint)
-                    canvas.drawText(tipo, 380f, yPos, bodyPaint)
-                    canvas.drawText("${prefix}R$ ${tx.amount}", 450f, yPos, paint)
-                    yPos += 18f
+                    canvas.drawText(tx.date.format(formatter), marginL + 6f, y, pBody)
+                    canvas.drawText(tx.description.take(35), marginL + 110f, y, pBody)
+                    canvas.drawText(tipo, marginL + 340f, y, pBody)
+                    canvas.drawText("$prefix${currencyFmt.format(tx.amount)}", marginL + 420f, y, paint)
+                    y += 16f
                 }
+
+                // ═══ FOOTER ═══
+                y = maxOf(y + 20f, ph - 50f)
+                canvas.drawLine(marginL, ph - 35f, marginR, ph - 35f, pLine)
+                canvas.drawText("IF Bank — Extrato Bancário — Página ${pageNum - 1}", pw / 2f, ph - 20f, pFooter)
 
                 doc.finishPage(page)
 
