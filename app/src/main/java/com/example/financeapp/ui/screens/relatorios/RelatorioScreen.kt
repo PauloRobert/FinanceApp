@@ -74,19 +74,18 @@ class RelatorioViewModel(
 
                 // Agrupar por descrição como "categoria"
                 val cores = listOf(IFBlue, IFPurple, IFLilac, IFIncome, IFWarning, Color(0xFF06B6D4), Color(0xFFF472B6))
-                val grupos = saidas.groupBy { it.description.take(20) }
-                    .map { (nome, txs) -> CategoriaResumo(nome, txs.sumOf { it.amount }, txs.size, cores[grupos@ 0]) }
+                val categoriasRaw = saidas.groupBy { it.description.take(20) }
+                    .map { (nome, txs) -> CategoriaResumo(nome, txs.sumOf { it.amount }, txs.size, Color.Gray) }
                     .sortedByDescending { it.total }
-
-                val categoriasComCor = grupos.mapIndexed { i, cat -> cat.copy(cor = cores[i % cores.size]) }
+                val categoriasComCor = categoriasRaw.mapIndexed { i, cat -> cat.copy(cor = cores[i % cores.size]) }
 
                 _estado.update {
                     it.copy(
                         carregando = false,
                         totalEntradas = totalE, totalSaidas = totalS,
                         saldo = totalE - totalS, qtdTransacoes = transacoes.size,
-                        maiorEntrada = entradas.maxByOrNull { it.amount },
-                        maiorSaida = saidas.maxByOrNull { it.amount },
+                        maiorEntrada = entradas.maxByOrNull { e -> e.amount },
+                        maiorSaida = saidas.maxByOrNull { s -> s.amount },
                         categorias = categoriasComCor
                     )
                 }
