@@ -70,6 +70,7 @@ fun HomeScreen(
     aoAbrirInvestimento: () -> Unit = {},
     aoExportarExtrato: () -> Unit = {},
     aoAbrirRelatorios: () -> Unit = {},
+    aoAbrirNotificacoes: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -174,7 +175,8 @@ fun HomeScreen(
             // Header premium com saudação
             IFBankHeader(
                 nomeUsuario = estado.nomeUsuario,
-                aoAbrirConfiguracoes = aoAbrirConfiguracoes
+                aoAbrirConfiguracoes = aoAbrirConfiguracoes,
+                aoAbrirNotificacoes = aoAbrirNotificacoes
             )
 
             if (estado.carregando) {

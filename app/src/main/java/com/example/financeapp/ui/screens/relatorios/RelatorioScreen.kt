@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +34,7 @@ import com.example.financeapp.utils.formatCurrencyBr
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -48,7 +49,8 @@ data class RelatorioUiState(
     val qtdTransacoes: Int = 0,
     val maiorEntrada: Transaction? = null,
     val maiorSaida: Transaction? = null,
-    val categorias: List<CategoriaResumo> = emptyList()
+    val categorias: List<CategoriaResumo> = emptyList(),
+    val mensagemErro: String? = null
 )
 
 data class CategoriaResumo(val nome: String, val total: BigDecimal, val qtd: Int, val cor: Color)
@@ -62,38 +64,48 @@ class RelatorioViewModel(
 
     init { carregar() }
 
-    private fun carregar() {
+    fun carregar() {
         viewModelScope.launch {
-            _estado.update { it.copy(carregando = true) }
-            try {
-                val transacoes = transactionRepository.obterTransacoes().firstOrNull() ?: emptyList()
-                val entradas = transacoes.filter { it.type == TransactionType.INCOME }
-                val saidas = transacoes.filter { it.type == TransactionType.EXPENSE }
-                val totalE = entradas.sumOf { it.amount }
-                val totalS = saidas.sumOf { it.amount }
-
-                // Agrupar por descrição como "categoria"
-                val cores = listOf(IFBlue, IFPurple, IFLilac, IFIncome, IFWarning, Color(0xFF06B6D4), Color(0xFFF472B6))
-                val categoriasRaw = saidas.groupBy { it.description.take(20) }
-                    .map { (nome, txs) -> CategoriaResumo(nome, txs.sumOf { it.amount }, txs.size, Color.Gray) }
-                    .sortedByDescending { it.total }
-                val categoriasComCor = categoriasRaw.mapIndexed { i, cat -> cat.copy(cor = cores[i % cores.size]) }
-
-                _estado.update {
-                    it.copy(
-                        carregando = false,
-                        totalEntradas = totalE, totalSaidas = totalS,
-                        saldo = totalE - totalS, qtdTransacoes = transacoes.size,
-                        maiorEntrada = entradas.maxByOrNull { e -> e.amount },
-                        maiorSaida = saidas.maxByOrNull { s -> s.amount },
-                        categorias = categoriasComCor
-                    )
+            _estado.update { it.copy(carregando = true, mensagemErro = null) }
+            transactionRepository.obterTransacoes()
+                .catch { erro ->
+                    android.util.Log.e("FinanceDebug", "Relatorio ERRO ao carregar: ${erro.message}", erro)
+                    _estado.update {
+                        it.copy(
+                            carregando = false,
+                            mensagemErro = "Erro ao carregar relatórios: ${erro.message}"
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _estado.update { it.copy(carregando = false) }
-            }
+                .collect { transacoes ->
+                    android.util.Log.d("FinanceDebug", "Relatorio recebeu ${transacoes.size} transacoes")
+                    val entradas = transacoes.filter { it.type == TransactionType.INCOME }
+                    val saidas = transacoes.filter { it.type == TransactionType.EXPENSE }
+                    val totalE = entradas.sumOf { it.amount }
+                    val totalS = saidas.sumOf { it.amount }
+
+                    // Agrupar por descrição como "categoria"
+                    val cores = listOf(IFBlue, IFPurple, IFLilac, IFIncome, IFWarning, Color(0xFF06B6D4), Color(0xFFF472B6))
+                    val categoriasRaw = saidas.groupBy { it.description.take(20) }
+                        .map { (nome, txs) -> CategoriaResumo(nome, txs.sumOf { it.amount }, txs.size, Color.Gray) }
+                        .sortedByDescending { it.total }
+                    val categoriasComCor = categoriasRaw.mapIndexed { i, cat -> cat.copy(cor = cores[i % cores.size]) }
+
+                    _estado.update {
+                        it.copy(
+                            carregando = false,
+                            totalEntradas = totalE, totalSaidas = totalS,
+                            saldo = totalE - totalS, qtdTransacoes = transacoes.size,
+                            maiorEntrada = entradas.maxByOrNull { e -> e.amount },
+                            maiorSaida = saidas.maxByOrNull { s -> s.amount },
+                            categorias = categoriasComCor
+                        )
+                    }
+                }
         }
     }
+
+    fun limparErro() { _estado.update { it.copy(mensagemErro = null) } }
 }
 
 // ── Screen ─────────────────────────────────────────────
@@ -104,8 +116,25 @@ fun RelatorioScreen(
     viewModel: RelatorioViewModel = koinViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
+    val snackbar = remember { SnackbarHostState() }
+    val escopo = rememberCoroutineScope()
+
+    LaunchedEffect(estado.mensagemErro) {
+        estado.mensagemErro?.let { msg ->
+            val resultado = snackbar.showSnackbar(
+                message = msg,
+                actionLabel = "Tentar novamente",
+                duration = SnackbarDuration.Long
+            )
+            if (resultado == SnackbarResult.ActionPerformed) {
+                viewModel.carregar()
+            }
+            viewModel.limparErro()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(

@@ -4,7 +4,7 @@ import okhttp3.Interceptor
 import okhttp3.Response
 
 // Interceptor que adiciona o token JWT em todas as requisições
-class AuthInterceptor(private var token: String = "") : Interceptor {
+class AuthInterceptor(@Volatile private var token: String = "") : Interceptor {
 
     fun atualizarToken(novoToken: String) {
         token = novoToken

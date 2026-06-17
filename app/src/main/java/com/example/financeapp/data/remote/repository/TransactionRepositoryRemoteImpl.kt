@@ -27,13 +27,10 @@ class TransactionRepositoryRemoteImpl(
 
     override fun obterTransacoes(): Flow<List<Transaction>> = flow {
         garantirToken()
-        try {
-            val resposta = api.obterTransacoes()
-            val transacoes = resposta.transactions.map { it.toDomain() }
-            emit(transacoes)
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
+        val resposta = api.obterTransacoes()
+        val transacoes = resposta.transactions.map { it.toDomain() }
+        android.util.Log.d("FinanceDebug", "obterTransacoes OK: ${transacoes.size} transacoes")
+        emit(transacoes)
     }
 
     override suspend fun inserirTransacao(transacao: Transaction) {

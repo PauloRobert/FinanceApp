@@ -35,6 +35,7 @@ import java.time.LocalTime
 fun IFBankHeader(
     nomeUsuario: String,
     aoAbrirConfiguracoes: () -> Unit,
+    aoAbrirNotificacoes: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val saudacao = when (LocalTime.now().hour) {
@@ -90,7 +91,7 @@ fun IFBankHeader(
         // Ações do header
         Row {
             Box {
-                IconButton(onClick = { }) {
+                IconButton(onClick = aoAbrirNotificacoes) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = "Notificações",

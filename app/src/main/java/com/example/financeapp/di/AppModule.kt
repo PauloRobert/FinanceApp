@@ -31,6 +31,7 @@ import com.example.financeapp.ui.screens.deposito.DepositoViewModel
 import com.example.financeapp.ui.screens.extrato.ExtratoViewModel
 import com.example.financeapp.ui.screens.pagamento.PagamentoViewModel
 import com.example.financeapp.ui.screens.relatorios.RelatorioViewModel
+import com.example.financeapp.ui.screens.notificacoes.NotificacoesViewModel
 import com.example.financeapp.ui.screens.cartoes.CartoesViewModel
 import com.example.financeapp.ui.screens.perfil.PerfilViewModel
 import com.example.financeapp.ui.screens.pix.MinhasChavesViewModel
@@ -130,4 +131,5 @@ val appModule = module {
     viewModel { InvestimentoViewModel(get()) }
     viewModel { ExtratoViewModel(get()) }
     viewModel { RelatorioViewModel(get()) }
+    viewModel { NotificacoesViewModel(get()) }
 }

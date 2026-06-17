@@ -38,12 +38,14 @@ import com.example.financeapp.ui.components.GradientButton
 import com.example.financeapp.ui.components.IFBankBackground
 import com.example.financeapp.ui.theme.*
 import com.example.financeapp.utils.formatCurrencyBr
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
 import java.text.NumberFormat
@@ -72,12 +74,19 @@ class ExtratoViewModel(
     fun carregar() {
         viewModelScope.launch {
             _estado.update { it.copy(carregando = true) }
-            try {
-                val transacoes = transactionRepository.obterTransacoes().firstOrNull() ?: emptyList()
-                _estado.update { it.copy(carregando = false, transacoes = transacoes) }
-            } catch (e: Exception) {
-                _estado.update { it.copy(carregando = false, mensagem = "Erro ao carregar") }
-            }
+            transactionRepository.obterTransacoes()
+                .catch { erro ->
+                    android.util.Log.e("FinanceDebug", "Extrato ERRO ao carregar: ${erro.message}", erro)
+                    _estado.update {
+                        it.copy(
+                            carregando = false,
+                            mensagem = "Erro ao carregar extrato: ${erro.message}"
+                        )
+                    }
+                }
+                .collect { transacoes ->
+                    _estado.update { it.copy(carregando = false, transacoes = transacoes) }
+                }
         }
     }
 
@@ -99,6 +108,11 @@ class ExtratoViewModel(
             _estado.update { it.copy(exportando = true) }
             try {
                 val transacoes = getTransacoesFiltradas()
+                if (transacoes.isEmpty()) {
+                    _estado.update { it.copy(exportando = false, mensagem = "Nenhuma transação para exportar") }
+                    return@launch
+                }
+
                 val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                 val currencyFmt = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
@@ -240,11 +254,19 @@ class ExtratoViewModel(
 
                 doc.finishPage(page)
 
-                val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "IF Bank")
-                dir.mkdirs()
-                val file = File(dir, "extrato_ifbank_${System.currentTimeMillis()}.pdf")
-                file.outputStream().use { doc.writeTo(it) }
-                doc.close()
+                // Salvar em Dispatchers.IO para não bloquear a Main thread
+                val file = withContext(Dispatchers.IO) {
+                    val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+                        ?: throw IllegalStateException("Armazenamento externo indisponível")
+                    val dir = File(baseDir, "IF Bank")
+                    if (!dir.exists() && !dir.mkdirs()) {
+                        throw IllegalStateException("Não foi possível criar diretório: ${dir.absolutePath}")
+                    }
+                    val pdfFile = File(dir, "extrato_ifbank_${System.currentTimeMillis()}.pdf")
+                    pdfFile.outputStream().use { doc.writeTo(it) }
+                    doc.close()
+                    pdfFile
+                }
 
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
@@ -257,6 +279,7 @@ class ExtratoViewModel(
 
                 _estado.update { it.copy(exportando = false, mensagem = "PDF exportado!") }
             } catch (e: Exception) {
+                android.util.Log.e("FinanceDebug", "Extrato ERRO ao exportar PDF", e)
                 _estado.update { it.copy(exportando = false, mensagem = "Erro ao exportar: ${e.message}") }
             }
         }
