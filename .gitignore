@@ -13,8 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
-*.md
 .idea
 *.pdf
 *.py
 *.log
+.idea/
+.kotlin/*
+.github/*
