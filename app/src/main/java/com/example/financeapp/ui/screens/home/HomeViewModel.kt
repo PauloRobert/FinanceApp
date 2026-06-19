@@ -1,66 +1,146 @@
 package com.example.financeapp.ui.screens.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financeapp.domain.model.Transaction
 import com.example.financeapp.domain.model.TransactionType
-import com.example.financeapp.domain.usecase.DeleteTransactionUseCase
-import com.example.financeapp.domain.usecase.GetTransactionsUseCase
-import com.example.financeapp.domain.usecase.InsertTransactionsUseCase
-import com.example.financeapp.domain.usecase.UpdateTransactionUseCase
+import com.example.financeapp.domain.repository.AuthRepository
+import com.example.financeapp.domain.repository.TransactionRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import kotlinx.serialization.descriptors.SerialDescriptor
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.time.temporal.TemporalAmount
 
 class HomeViewModel(
-    private val getTransactionsUseCase: GetTransactionsUseCase,
-    private val insertTransactionsUseCase: InsertTransactionsUseCase,
-    private val updateTransactionUseCase: UpdateTransactionUseCase,
-    private val deleteTransactionUseCase: DeleteTransactionUseCase
+    private val repositorio: TransactionRepository,
+    private val authRepositorio: AuthRepository
 ) : ViewModel() {
-    var state by mutableStateOf(HomeUiState())
-        private set
+
+    private val _estado = MutableStateFlow(HomeUiState())
+    val estado: StateFlow<HomeUiState> = _estado.asStateFlow()
 
     init {
+        carregarTransacoes()
+        observarNomeUsuario()
+    }
+
+    // Carrega transações da API (apenas no init ou pull-to-refresh)
+    fun carregarTransacoes() {
         viewModelScope.launch {
-            getTransactionsUseCase().collect { data ->
-                state = state.copy(transactions = data)
+            _estado.value = _estado.value.copy(carregando = true)
+            repositorio.obterTransacoes()
+                .catch { erro ->
+                    _estado.value = _estado.value.copy(
+                        carregando = false,
+                        mensagemErro = "Erro ao carregar transações: ${erro.message}"
+                    )
+                }
+                .collect { lista ->
+                    _estado.value = _estado.value.copy(
+                        transacoes = lista,
+                        carregando = false
+                    )
+                }
+        }
+    }
+
+    // Sync silencioso — atualiza lista sem mostrar loading
+    private fun sincronizarSilenciosamente() {
+        viewModelScope.launch {
+            repositorio.obterTransacoes()
+                .catch { /* silencioso */ }
+                .collect { lista ->
+                    _estado.value = _estado.value.copy(transacoes = lista)
+                }
+        }
+    }
+
+    private fun observarNomeUsuario() {
+        viewModelScope.launch {
+            authRepositorio.obterNomeUsuario().collect { nome ->
+                _estado.value = _estado.value.copy(nomeUsuario = nome ?: "")
             }
         }
     }
 
-
-    fun addTransaction(
-        description: String,
-        amount: BigDecimal,
-        date: LocalDateTime,
-        type: Boolean
+    fun adicionarTransacao(
+        descricao: String,
+        valor: BigDecimal,
+        data: LocalDateTime,
+        ehEntrada: Boolean
     ) {
+        val transacao = Transaction(
+            id = "temp_${System.currentTimeMillis()}",
+            description = descricao,
+            amount = valor,
+            date = data,
+            type = if (ehEntrada) TransactionType.INCOME else TransactionType.EXPENSE
+        )
+
+        // Optimistic update — adiciona na lista local imediatamente
+        _estado.value = _estado.value.copy(
+            transacoes = listOf(transacao) + _estado.value.transacoes
+        )
+
         viewModelScope.launch {
-            val transaction = Transaction(
-                description = description,
-                amount = amount,
-                date = date,
-                type = if (type) TransactionType.INCOME else TransactionType.EXPENSE
-            )
-            insertTransactionsUseCase(transaction)
+            try {
+                repositorio.inserirTransacao(transacao)
+                sincronizarSilenciosamente()
+            } catch (e: Exception) {
+                // Rollback — remove a transação temporária
+                _estado.value = _estado.value.copy(
+                    transacoes = _estado.value.transacoes.filter { it.id != transacao.id },
+                    mensagemErro = "Erro ao adicionar transação: ${e.message}"
+                )
+            }
         }
     }
 
-    fun updateTransaction(transaction: Transaction) {
+    fun atualizarTransacao(transacao: Transaction) {
+        // Optimistic update — substitui na lista local
+        _estado.value = _estado.value.copy(
+            transacoes = _estado.value.transacoes.map {
+                if (it.id == transacao.id) transacao else it
+            }
+        )
+
         viewModelScope.launch {
-            updateTransactionUseCase(transaction)
+            try {
+                repositorio.atualizarTransacao(transacao)
+                sincronizarSilenciosamente()
+            } catch (e: Exception) {
+                _estado.value = _estado.value.copy(
+                    mensagemErro = "Erro ao atualizar transação: ${e.message}"
+                )
+                sincronizarSilenciosamente() // Reverte ao estado real
+            }
         }
     }
 
-    fun deleteTransaction(transaction: Transaction) {
+    fun deletarTransacao(transacao: Transaction) {
+        // Optimistic update — remove da lista local
+        _estado.value = _estado.value.copy(
+            transacoes = _estado.value.transacoes.filter { it.id != transacao.id }
+        )
+
         viewModelScope.launch {
-            deleteTransactionUseCase(transaction.id)
+            try {
+                repositorio.deletarTransacao(transacao.id)
+                sincronizarSilenciosamente()
+            } catch (e: Exception) {
+                // Rollback — re-adiciona a transação
+                _estado.value = _estado.value.copy(
+                    transacoes = _estado.value.transacoes + transacao,
+                    mensagemErro = "Erro ao excluir transação: ${e.message}"
+                )
+            }
         }
+    }
+
+    fun limparErro() {
+        _estado.value = _estado.value.copy(mensagemErro = null)
     }
 }
